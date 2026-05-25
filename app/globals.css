@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .input {
+    @apply h-12 w-full border-2 border-ink bg-bone px-3 font-semibold outline-none transition focus:bg-white focus:shadow-hard;
+  }
+
+  .file-input {
+    @apply w-full border-2 border-ink bg-bone p-2 font-semibold file:mr-3 file:border-2 file:border-ink file:bg-white file:px-3 file:py-2 file:font-display file:text-xs file:font-black file:uppercase;
+  }
+}
+
+:root {
+  color-scheme: light;
+  background: #f6f1e7;
+  color: #11110f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    linear-gradient(90deg, rgba(17, 17, 15, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(17, 17, 15, 0.05) 1px, transparent 1px),
+    #f6f1e7;
+  background-size: 36px 36px;
+  font-family: var(--font-inter), Arial, sans-serif;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: #ccff00;
+  color: #11110f;
+}
+
+.grain::before {
+  pointer-events: none;
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
