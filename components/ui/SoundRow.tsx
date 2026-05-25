@@ -61,8 +61,18 @@ function isMegaUrl(value: string) {
   return getIframeSrc(value).includes("mega.nz/");
 }
 
-function getSiteDownloadUrl(value: string) {
-  return `/api/download?url=${encodeURIComponent(value)}`;
+function slugifyDownloadName(value: string) {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "prodbrogy-download"
+  );
+}
+
+function getSiteDownloadUrl(value: string, sound: SoundAsset) {
+  const cleanName = slugifyDownloadName(`${sound.title}-${sound.category}`);
+  return `/api/download?url=${encodeURIComponent(value)}&name=${encodeURIComponent(cleanName)}`;
 }
 
 function getPreviewLimit(category: string) {
@@ -370,7 +380,7 @@ export function SoundRow({ sound }: SoundRowProps) {
     flashNotice(isDirectFile ? "Download starting" : `Reserved ${sound.credits} credit${sound.credits === 1 ? "" : "s"}`);
 
     const link = document.createElement("a");
-    link.href = isDirectFile ? getSiteDownloadUrl(downloadUrl) : downloadUrl;
+    link.href = isDirectFile ? getSiteDownloadUrl(downloadUrl, sound) : downloadUrl;
     link.rel = "noopener";
 
     if (isDirectFile) {

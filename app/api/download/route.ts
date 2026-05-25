@@ -8,9 +8,25 @@ function getFileName(pathname: string) {
   return name ? decodeURIComponent(name) : "prodbrogy-download";
 }
 
+function getFileExtension(pathname: string) {
+  const match = pathname.match(/\.([a-z0-9]+)$/i);
+  return match ? `.${match[1].toLowerCase()}` : "";
+}
+
+function cleanFileName(value: string) {
+  return (
+    value
+      .toLowerCase()
+      .replace(/\.[a-z0-9]+$/i, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "prodbrogy-download"
+  );
+}
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const rawUrl = requestUrl.searchParams.get("url");
+  const requestedName = requestUrl.searchParams.get("name");
 
   if (!rawUrl) {
     return NextResponse.json({ error: "Missing download URL." }, { status: 400 });
@@ -38,7 +54,7 @@ export async function GET(request: Request) {
 
   return new Response(response.body, {
     headers: {
-      "Content-Disposition": `attachment; filename="${getFileName(downloadUrl.pathname)}"`,
+      "Content-Disposition": `attachment; filename="${cleanFileName(requestedName || getFileName(downloadUrl.pathname))}${getFileExtension(downloadUrl.pathname)}"`,
       "Content-Type": response.headers.get("content-type") || "application/octet-stream",
       "Content-Length": response.headers.get("content-length") || "",
       "Cache-Control": "private, no-store"
