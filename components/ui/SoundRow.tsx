@@ -61,6 +61,10 @@ function isMegaUrl(value: string) {
   return getIframeSrc(value).includes("mega.nz/");
 }
 
+function getSiteDownloadUrl(value: string) {
+  return `/api/download?url=${encodeURIComponent(value)}`;
+}
+
 function getPreviewLimit(category: string) {
   if (category === "starters") {
     return null;
@@ -359,7 +363,7 @@ export function SoundRow({ sound }: SoundRowProps) {
     flashNotice(isDirectFile ? "Download starting" : `Reserved ${sound.credits} credit${sound.credits === 1 ? "" : "s"}`);
 
     const link = document.createElement("a");
-    link.href = downloadUrl;
+    link.href = isDirectFile ? getSiteDownloadUrl(downloadUrl) : downloadUrl;
     link.rel = "noopener";
 
     if (isDirectFile) {
