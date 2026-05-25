@@ -18,7 +18,7 @@ function cleanFileName(value: string) {
     value
       .toLowerCase()
       .replace(/\.[a-z0-9]+$/i, "")
-      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/[^@a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "prodbrogy-download"
   );
 }

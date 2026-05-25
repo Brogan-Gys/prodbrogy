@@ -61,13 +61,23 @@ function slugifyDownloadName(value: string) {
   return (
     value
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/[^@a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "prodbrogy-download"
   );
 }
 
 function getSiteDownloadUrl(value: string, sound: SoundAsset) {
-  const cleanName = slugifyDownloadName(`${sound.title}-${sound.category}`);
+  const cleanName = slugifyDownloadName(
+    [
+      "@prodbrogy",
+      sound.producerName ? `x-${sound.producerName}` : "",
+      sound.title,
+      sound.bpm && sound.bpm > 0 ? `${sound.bpm}-bpm` : ""
+    ]
+      .filter(Boolean)
+      .join("-")
+  );
+
   return `/api/download?url=${encodeURIComponent(value)}&name=${encodeURIComponent(cleanName)}`;
 }
 
