@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
-import { getFileExtension, getMissingUploadEnv, getSanityWriteClient, isAdminPasswordValid, slugifyFileName, uploadFileToR2 } from "@/lib/server/adminUpload";
+import {
+  getFileExtension,
+  getMissingUploadEnv,
+  getSanityWriteClient,
+  isAdminPasswordValid,
+  slugifyFileName,
+  uploadFileToR2,
+  uploadTrimmedPreviewToR2
+} from "@/lib/server/adminUpload";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const accents = ["volt", "coral", "cyan", "plum"] as const;
 
@@ -62,9 +71,7 @@ export async function POST(request: Request) {
   const uniqueId = Date.now().toString(36);
   const baseKey = `${baseSlug}-${uniqueId}`;
 
-  const previewUrl = previewFile
-    ? await uploadFileToR2(previewFile, `previews/${baseKey}${getFileExtension(previewFile.name)}`)
-    : undefined;
+  const previewUrl = previewFile ? await uploadTrimmedPreviewToR2(previewFile, `previews/${baseKey}.mp3`) : undefined;
   const downloadUrl = downloadFile
     ? await uploadFileToR2(downloadFile, `downloads/${baseKey}${getFileExtension(downloadFile.name)}`)
     : undefined;

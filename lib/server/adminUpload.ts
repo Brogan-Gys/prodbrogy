@@ -1,5 +1,15 @@
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { createClient } from "@sanity/client";
+import { execFile } from "child_process";
+import ffmpegPath from "ffmpeg-static";
+import { randomUUID } from "crypto";
+import { mkdir, readFile, rm, writeFile } from "fs/promises";
+import { tmpdir } from "os";
+import path from "path";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
+const previewDurationSeconds = 20;
 
 const requiredEnv = [
   "R2_ACCOUNT_ID",
@@ -96,14 +106,57 @@ export function getFileExtension(fileName: string) {
 export async function uploadFileToR2(file: File, key: string) {
   const bytes = Buffer.from(await file.arrayBuffer());
 
+  await uploadBufferToR2(bytes, key, file.type || "application/octet-stream");
+
+  return key;
+}
+
+async function uploadBufferToR2(bytes: Buffer, key: string, contentType: string) {
+
   await getR2Client().send(
     new PutObjectCommand({
       Bucket: getEnv("R2_BUCKET_NAME"),
       Key: key,
       Body: bytes,
-      ContentType: file.type || "application/octet-stream"
+      ContentType: contentType
     })
   );
+}
+
+export async function uploadTrimmedPreviewToR2(file: File, key: string) {
+  if (!ffmpegPath) {
+    throw new Error("Preview trimming is unavailable because ffmpeg is not installed.");
+  }
+
+  const workDir = path.join(tmpdir(), `prodbrogy-preview-${randomUUID()}`);
+  const inputPath = path.join(workDir, `input${getFileExtension(file.name) || ".audio"}`);
+  const outputPath = path.join(workDir, "preview.mp3");
+
+  await mkdir(workDir, { recursive: true });
+
+  try {
+    await writeFile(inputPath, Buffer.from(await file.arrayBuffer()));
+    await execFileAsync(ffmpegPath, [
+      "-y",
+      "-i",
+      inputPath,
+      "-t",
+      String(previewDurationSeconds),
+      "-af",
+      "afade=t=out:st=18.5:d=1.5",
+      "-vn",
+      "-codec:a",
+      "libmp3lame",
+      "-b:a",
+      "192k",
+      outputPath
+    ]);
+
+    const bytes = await readFile(outputPath);
+    await uploadBufferToR2(bytes, key, "audio/mpeg");
+  } finally {
+    await rm(workDir, { force: true, recursive: true });
+  }
 
   return key;
 }

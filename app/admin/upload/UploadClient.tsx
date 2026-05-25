@@ -296,7 +296,7 @@ export function UploadClient() {
             </select>
           </Field>
 
-          <Field label="Preview audio">
+          <Field label="Preview audio - auto trims to 20 sec">
             <input name="previewFile" type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.webm" className="file-input" />
           </Field>
 
