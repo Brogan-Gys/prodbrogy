@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { deleteFileFromR2, getMissingUploadEnv, getSanityWriteClient, isAdminPasswordValid } from "@/lib/server/adminUpload";
+import {
+  deleteFileFromR2,
+  getMissingAdminEnv,
+  getSanityWriteClient,
+  isAdminPasswordValid,
+  isR2Configured
+} from "@/lib/server/adminUpload";
 
 export const runtime = "nodejs";
 
@@ -39,7 +45,7 @@ type UpdatePayload = {
 };
 
 function getConfigError() {
-  const missingEnv = getMissingUploadEnv();
+  const missingEnv = getMissingAdminEnv();
   return missingEnv.length > 0 ? `Admin is not configured: ${missingEnv.join(", ")}` : "";
 }
 
@@ -142,7 +148,10 @@ export async function DELETE(request: Request) {
     { id: body.id }
   );
 
-  await Promise.all([deleteFileFromR2(existing?.previewUrl), deleteFileFromR2(existing?.downloadUrl)]);
+  if (isR2Configured()) {
+    await Promise.all([deleteFileFromR2(existing?.previewUrl), deleteFileFromR2(existing?.downloadUrl)]);
+  }
+
   await client.delete(body.id);
 
   return NextResponse.json({ id: body.id });

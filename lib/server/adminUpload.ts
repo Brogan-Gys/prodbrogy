@@ -12,10 +12,31 @@ const requiredEnv = [
   "NEXT_PUBLIC_SANITY_DATASET"
 ] as const;
 
+const requiredAdminEnv = [
+  "SANITY_API_WRITE_TOKEN",
+  "ADMIN_UPLOAD_PASSWORD",
+  "NEXT_PUBLIC_SANITY_PROJECT_ID",
+  "NEXT_PUBLIC_SANITY_DATASET"
+] as const;
+
+const requiredR2Env = ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"] as const;
+
 type RequiredEnvKey = (typeof requiredEnv)[number];
 
 export function getMissingUploadEnv() {
   return requiredEnv.filter((key) => !process.env[key]);
+}
+
+export function getMissingAdminEnv() {
+  return requiredAdminEnv.filter((key) => !process.env[key]);
+}
+
+export function getMissingR2Env() {
+  return requiredR2Env.filter((key) => !process.env[key]);
+}
+
+export function isR2Configured() {
+  return getMissingR2Env().length === 0;
 }
 
 export function isUploadConfigured() {
