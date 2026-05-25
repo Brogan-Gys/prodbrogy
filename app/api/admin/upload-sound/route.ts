@@ -76,6 +76,10 @@ function cleanNumber(value: unknown, fallback: number | null) {
   return value;
 }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown upload error.";
+}
+
 async function finalizeDirectUpload(request: Request) {
   const body = (await request.json()) as FinalizeUploadRequest;
 
@@ -125,65 +129,69 @@ async function finalizeDirectUpload(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const missingEnv = getMissingUploadEnv();
+  try {
+    const missingEnv = getMissingUploadEnv();
 
-  if (missingEnv.length > 0) {
-    return NextResponse.json({ error: `Upload is not configured: ${missingEnv.join(", ")}` }, { status: 500 });
+    if (missingEnv.length > 0) {
+      return NextResponse.json({ error: `Upload is not configured: ${missingEnv.join(", ")}` }, { status: 500 });
+    }
+
+    if (request.headers.get("content-type")?.includes("application/json")) {
+      return finalizeDirectUpload(request);
+    }
+
+    const formData = await request.formData();
+
+    if (!isAdminPasswordValid(formData.get("password"))) {
+      return NextResponse.json({ error: "Invalid admin password." }, { status: 401 });
+    }
+
+    const title = getString(formData, "title");
+    const category = getString(formData, "category");
+    const previewFile = getFile(formData, "previewFile");
+    const downloadFile = getFile(formData, "downloadFile");
+
+    if (!title || !category) {
+      return NextResponse.json({ error: "Title and category are required." }, { status: 400 });
+    }
+
+    if (!previewFile && !downloadFile) {
+      return NextResponse.json({ error: "Add at least one preview or download file." }, { status: 400 });
+    }
+
+    const baseSlug = slugifyFileName(title);
+    const uniqueId = Date.now().toString(36);
+    const baseKey = `${baseSlug}-${uniqueId}`;
+
+    const previewUrl = previewFile ? await uploadTrimmedPreviewToR2(previewFile, `previews/${baseKey}.mp3`) : undefined;
+    const downloadUrl = downloadFile
+      ? await uploadFileToR2(downloadFile, `downloads/${baseKey}${getFileExtension(downloadFile.name)}`)
+      : undefined;
+
+    const accent = getString(formData, "accent");
+
+    const document = await getSanityWriteClient().create({
+      _type: "soundAsset",
+      title,
+      category,
+      producerName: getString(formData, "producerName"),
+      previewUrl,
+      downloadUrl,
+      bpm: getNumber(formData, "bpm", null),
+      key: getString(formData, "key"),
+      mood: getString(formData, "mood"),
+      credits: getNumber(formData, "credits", 1) ?? 1,
+      duration: getString(formData, "duration") || "0:00",
+      tags: getTags(getString(formData, "tags")),
+      accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt"
+    });
+
+    return NextResponse.json({
+      id: document._id,
+      previewUrl,
+      downloadUrl
+    });
+  } catch (error) {
+    return NextResponse.json({ error: `Upload failed: ${getErrorMessage(error)}` }, { status: 500 });
   }
-
-  if (request.headers.get("content-type")?.includes("application/json")) {
-    return finalizeDirectUpload(request);
-  }
-
-  const formData = await request.formData();
-
-  if (!isAdminPasswordValid(formData.get("password"))) {
-    return NextResponse.json({ error: "Invalid admin password." }, { status: 401 });
-  }
-
-  const title = getString(formData, "title");
-  const category = getString(formData, "category");
-  const previewFile = getFile(formData, "previewFile");
-  const downloadFile = getFile(formData, "downloadFile");
-
-  if (!title || !category) {
-    return NextResponse.json({ error: "Title and category are required." }, { status: 400 });
-  }
-
-  if (!previewFile && !downloadFile) {
-    return NextResponse.json({ error: "Add at least one preview or download file." }, { status: 400 });
-  }
-
-  const baseSlug = slugifyFileName(title);
-  const uniqueId = Date.now().toString(36);
-  const baseKey = `${baseSlug}-${uniqueId}`;
-
-  const previewUrl = previewFile ? await uploadTrimmedPreviewToR2(previewFile, `previews/${baseKey}.mp3`) : undefined;
-  const downloadUrl = downloadFile
-    ? await uploadFileToR2(downloadFile, `downloads/${baseKey}${getFileExtension(downloadFile.name)}`)
-    : undefined;
-
-  const accent = getString(formData, "accent");
-
-  const document = await getSanityWriteClient().create({
-    _type: "soundAsset",
-    title,
-    category,
-    producerName: getString(formData, "producerName"),
-    previewUrl,
-    downloadUrl,
-    bpm: getNumber(formData, "bpm", null),
-    key: getString(formData, "key"),
-    mood: getString(formData, "mood"),
-    credits: getNumber(formData, "credits", 1) ?? 1,
-    duration: getString(formData, "duration") || "0:00",
-    tags: getTags(getString(formData, "tags")),
-    accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt"
-  });
-
-  return NextResponse.json({
-    id: document._id,
-    previewUrl,
-    downloadUrl
-  });
 }
