@@ -57,7 +57,7 @@ export function Hero() {
       <div className="relative grid flex-1 items-center gap-8 py-10">
         <div className="relative z-10 max-w-4xl">
           <p data-hero-item className="mb-4 inline-flex border-2 border-ink bg-coral px-3 py-2 font-display text-sm font-black uppercase">
-            Producer vault / curated by you
+            Producer vault / curated sounds
           </p>
           <h1
             data-hero-item
@@ -68,8 +68,8 @@ export function Hero() {
             Supply
           </h1>
           <p data-hero-item className="mt-6 max-w-2xl text-lg font-semibold leading-7 md:text-xl">
-            A sharp, collectible library where producers can filter your creations, preview ideas,
-            and spend daily credits on the sounds they actually want.
+            A sharp, collectible library where producers can filter premium sounds, preview ideas,
+            and spend daily credits on the files they want in their session.
           </p>
           <div data-hero-item className="mt-7 flex flex-wrap gap-3">
             <ButtonLink href="#library" icon={Play}>

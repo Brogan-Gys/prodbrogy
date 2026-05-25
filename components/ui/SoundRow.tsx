@@ -12,6 +12,12 @@ import {
 import { cn } from "@/lib/utils";
 import type { SoundAsset } from "@/lib/sounds";
 
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
+
 type SoundRowProps = {
   sound: SoundAsset;
 };
@@ -55,12 +61,97 @@ function isMegaUrl(value: string) {
   return getIframeSrc(value).includes("mega.nz/");
 }
 
+function getPreviewLimit(category: string) {
+  if (category === "starters") {
+    return null;
+  }
+
+  if (category === "midi") {
+    return 15;
+  }
+
+  return 20;
+}
+
+function getPlayableDuration(duration: number, previewLimit: number | null) {
+  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : previewLimit ?? 0;
+
+  if (!previewLimit) {
+    return safeDuration;
+  }
+
+  return safeDuration > 0 ? Math.min(safeDuration, previewLimit) : previewLimit;
+}
+
+function formatTime(seconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
+function getTimeLabel(currentTime: number, duration: number | null, previewLimit: number | null, fallbackDuration: string) {
+  if (currentTime <= 0) {
+    return previewLimit ? `${formatTime(previewLimit)} preview` : fallbackDuration;
+  }
+
+  const playableDuration = getPlayableDuration(duration ?? 0, previewLimit);
+  return `${formatTime(currentTime)} / ${formatTime(playableDuration)}`;
+}
+
+function normalizePeaks(peaks: number[]) {
+  const cleanPeaks = peaks.filter((peak) => Number.isFinite(peak) && peak > 0);
+
+  if (cleanPeaks.length === 0) {
+    return [18, 34, 52, 28, 66, 42, 24, 58, 74, 36, 62, 30, 48, 70, 40, 56];
+  }
+
+  return cleanPeaks.map((peak) => Math.max(12, Math.min(96, Math.round(peak))));
+}
+
+async function getAudioPeaks(audioUrl: string) {
+  const response = await fetch(audioUrl);
+  const buffer = await response.arrayBuffer();
+  const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+  const context = new AudioContextConstructor();
+  const audioBuffer = await context.decodeAudioData(buffer);
+  const channelData = audioBuffer.getChannelData(0);
+  const barCount = 32;
+  const samplesPerBar = Math.max(1, Math.floor(channelData.length / barCount));
+  const rawPeaks = Array.from({ length: barCount }, (_, barIndex) => {
+    const start = barIndex * samplesPerBar;
+    const end = Math.min(channelData.length, start + samplesPerBar);
+    let total = 0;
+
+    for (let index = start; index < end; index += 1) {
+      total += Math.abs(channelData[index]);
+    }
+
+    return total / Math.max(1, end - start);
+  });
+  const maxPeak = Math.max(...rawPeaks, 0.001);
+
+  await context.close();
+
+  return normalizePeaks(rawPeaks.map((peak) => (peak / maxPeak) * 92));
+}
+
 export function SoundRow({ sound }: SoundRowProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [embedUrl, setEmbedUrl] = useState("");
   const [notice, setNotice] = useState("");
+  const [peaks, setPeaks] = useState<number[]>(normalizePeaks(sound.waveform));
+  const [playhead, setPlayhead] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const timerRef = useRef<number | null>(null);
+  const progressTimerRef = useRef<number | null>(null);
+  const fadeTimerRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef("");
+
+  const previewLimit = useMemo(() => getPreviewLimit(sound.category), [sound.category]);
 
   const meta = useMemo(
     () => [sound.bpm && sound.bpm > 0 ? `${sound.bpm} BPM` : "Any BPM", sound.key, sound.mood].filter(Boolean).join(" / "),
@@ -78,11 +169,114 @@ export function SoundRow({ sound }: SoundRowProps) {
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
+      clearPlaybackTimers();
       if (timerRef.current) {
         window.clearTimeout(timerRef.current);
       }
     };
   }, []);
+
+  useEffect(() => {
+    const previewSource = sound.previewUrl;
+
+    if (!previewSource) {
+      setPeaks(normalizePeaks(sound.waveform));
+      return;
+    }
+
+    const audioUrl = getIframeSrc(previewSource).trim();
+
+    if (!audioFilePattern.test(audioUrl)) {
+      setPeaks(normalizePeaks(sound.waveform));
+      return;
+    }
+
+    let cancelled = false;
+
+    getAudioPeaks(audioUrl)
+      .then((nextPeaks) => {
+        if (!cancelled) {
+          setPeaks(nextPeaks);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPeaks(normalizePeaks(sound.waveform));
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sound.previewUrl, sound.waveform]);
+
+  const clearPlaybackTimers = () => {
+    if (progressTimerRef.current) {
+      window.clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+
+    if (fadeTimerRef.current) {
+      window.clearInterval(fadeTimerRef.current);
+      fadeTimerRef.current = null;
+    }
+  };
+
+  const stopPlayback = (message?: string) => {
+    const audio = audioRef.current;
+
+    clearPlaybackTimers();
+
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = 1;
+    }
+
+    setIsPlaying(false);
+    setPlayhead(0);
+    setCurrentTime(0);
+
+    if (message) {
+      flashNotice(message);
+    }
+  };
+
+  const startProgressTracking = (audio: HTMLAudioElement) => {
+    clearPlaybackTimers();
+    progressTimerRef.current = window.setInterval(() => {
+      const duration = getPlayableDuration(audio.duration, previewLimit);
+      const elapsed = Math.min(audio.currentTime, duration);
+
+      setCurrentTime(elapsed);
+      setAudioDuration(Number.isFinite(audio.duration) ? audio.duration : null);
+      setPlayhead(duration > 0 ? Math.min(1, elapsed / duration) : 0);
+
+      if (previewLimit && duration - elapsed <= 2 && !fadeTimerRef.current) {
+        startFade(audio, Math.max(0.35, duration - elapsed));
+      }
+
+      if (previewLimit && elapsed >= duration) {
+        stopPlayback("Preview complete");
+      }
+    }, 120);
+  };
+
+  const startFade = (audio: HTMLAudioElement, seconds: number) => {
+    const startVolume = audio.volume || 1;
+    const startedAt = performance.now();
+    const fadeMs = seconds * 1000;
+
+    fadeTimerRef.current = window.setInterval(() => {
+      const progress = Math.min(1, (performance.now() - startedAt) / fadeMs);
+      audio.volume = Math.max(0, startVolume * (1 - progress));
+
+      if (progress >= 1 && fadeTimerRef.current) {
+        window.clearInterval(fadeTimerRef.current);
+        fadeTimerRef.current = null;
+      }
+    }, 50);
+  };
 
   const handlePreview = () => {
     const previewSource = sound.previewUrl;
@@ -110,23 +304,30 @@ export function SoundRow({ sound }: SoundRowProps) {
       return;
     }
 
-    if (!audioRef.current) {
-      audioRef.current = new Audio(audioUrl);
-      audioRef.current.addEventListener("ended", () => setIsPlaying(false));
+    if (!audioRef.current || audioUrlRef.current !== audioUrl) {
+      const audio = new Audio();
+      audio.src = audioUrl;
+      audio.preload = "metadata";
+      audio.addEventListener("loadedmetadata", () => {
+        setAudioDuration(Number.isFinite(audio.duration) ? audio.duration : null);
+      });
+      audio.addEventListener("ended", () => stopPlayback("Preview complete"));
+      audioRef.current = audio;
+      audioUrlRef.current = audioUrl;
     }
 
     if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-      flashNotice("Preview paused");
+      stopPlayback("Preview paused");
       return;
     }
 
     audioRef.current.currentTime = 0;
+    audioRef.current.volume = 1;
     audioRef.current
       .play()
       .then(() => {
         setIsPlaying(true);
+        startProgressTracking(audioRef.current as HTMLAudioElement);
         flashNotice("Preview playing");
       })
       .catch(() => {
@@ -200,11 +401,19 @@ export function SoundRow({ sound }: SoundRowProps) {
               </span>
             </div>
 
-            <div className="mt-4 flex h-16 items-end gap-1 border-2 border-ink bg-bone px-2 py-2">
-              {sound.waveform.map((height, index) => (
+            <div className="relative mt-4 flex h-16 items-end gap-1 overflow-hidden border-2 border-ink bg-bone px-2 py-2">
+              <span
+                className="pointer-events-none absolute inset-y-0 left-0 bg-ink/10 transition-[width]"
+                style={{ width: `${playhead * 100}%` }}
+                aria-hidden
+              />
+              {peaks.map((height, index) => (
                 <span
                   key={`${sound.id}-${index}`}
-                  className={cn("flex-1 transition-all", isPlaying ? accentClass[sound.accent] : "bg-ink/55")}
+                  className={cn(
+                    "relative z-10 flex-1 transition-all",
+                    index / Math.max(peaks.length - 1, 1) <= playhead || isPlaying ? accentClass[sound.accent] : "bg-ink/55"
+                  )}
                   style={{ height: `${height}%` }}
                 />
               ))}
@@ -221,7 +430,9 @@ export function SoundRow({ sound }: SoundRowProps) {
             ))}
           </div>
           <div className="flex items-center justify-between gap-2">
-            <p className="min-h-5 text-xs font-bold uppercase text-ink/55">{notice || sound.duration}</p>
+            <p className="min-h-5 text-xs font-bold uppercase text-ink/55">
+              {notice || getTimeLabel(currentTime, audioDuration, previewLimit, sound.duration)}
+            </p>
             <button
               type="button"
               onClick={handleDownload}

@@ -37,7 +37,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
     <main className="grain min-h-screen">
       <Hero />
 
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-8 pt-4 sm:px-6 lg:px-8">
+      <section id="library" className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-8 pt-4 sm:px-6 lg:px-8">
         <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
           <div className="flex flex-wrap gap-2">
             <StatPill icon={Disc3} label="Assets" value={`${sounds.length}`} tone="dark" />
