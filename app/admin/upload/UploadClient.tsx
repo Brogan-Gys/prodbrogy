@@ -101,6 +101,28 @@ async function readApiJson<T>(response: Response): Promise<T> {
   }
 }
 
+async function uploadFileDirectly(file: File, url: string, contentType: string) {
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body: file
+  });
+
+  if (!response.ok) {
+    throw new Error(`R2 upload failed for ${file.name}.`);
+  }
+}
+
+function getUploadFile(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return value instanceof File && value.size > 0 ? value : null;
+}
+
+function getNumberValue(formData: FormData, key: string) {
+  const value = getFormNumber(formData, key);
+  return value === null ? undefined : value;
+}
+
 export function UploadClient() {
   const [password, setPassword] = useState("");
   const [state, setState] = useState<UploadState>({ status: "idle", message: "" });
@@ -143,16 +165,67 @@ export function UploadClient() {
 
     const form = event.currentTarget;
     const formData = new FormData(form);
-    formData.set("password", password);
+    const previewFile = getUploadFile(formData, "previewFile");
+    const downloadFile = getUploadFile(formData, "downloadFile");
 
     try {
-      const response = await fetch("/api/admin/upload-sound", {
+      const uploadUrlResponse = await fetch("/api/admin/upload-url", {
         method: "POST",
-        body: formData
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password,
+          title: getFormString(formData, "title"),
+          previewFileName: previewFile?.name,
+          previewContentType: previewFile?.type,
+          downloadFileName: downloadFile?.name,
+          downloadContentType: downloadFile?.type
+        })
       });
-      const result = await readApiJson<{ error?: string; id?: string }>(response);
+      const uploadTargets = await readApiJson<{
+        error?: string;
+        baseKey?: string;
+        preview?: { key: string; url: string; contentType: string } | null;
+        download?: { key: string; url: string; contentType: string } | null;
+      }>(uploadUrlResponse);
 
-      if (!response.ok) {
+      if (!uploadUrlResponse.ok) {
+        throw new Error(uploadTargets.error || "Upload setup failed.");
+      }
+
+      if (previewFile && uploadTargets.preview) {
+        setState({ status: "submitting", message: "Uploading preview directly to R2..." });
+        await uploadFileDirectly(previewFile, uploadTargets.preview.url, uploadTargets.preview.contentType);
+      }
+
+      if (downloadFile && uploadTargets.download) {
+        setState({ status: "submitting", message: "Uploading download directly to R2..." });
+        await uploadFileDirectly(downloadFile, uploadTargets.download.url, uploadTargets.download.contentType);
+      }
+
+      setState({ status: "submitting", message: "Trimming preview and creating catalog entry..." });
+      const finalizeResponse = await fetch("/api/admin/upload-sound", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password,
+          baseKey: uploadTargets.baseKey,
+          previewTempKey: uploadTargets.preview?.key,
+          downloadKey: uploadTargets.download?.key,
+          title: getFormString(formData, "title"),
+          category: getFormString(formData, "category"),
+          producerName: getFormString(formData, "producerName"),
+          bpm: getNumberValue(formData, "bpm"),
+          key: getFormString(formData, "key"),
+          mood: getFormString(formData, "mood"),
+          credits: getNumberValue(formData, "credits"),
+          duration: getFormString(formData, "duration"),
+          tags: parseCsv(getFormString(formData, "tags")),
+          accent: getFormString(formData, "accent")
+        })
+      });
+      const result = await readApiJson<{ error?: string; id?: string }>(finalizeResponse);
+
+      if (!finalizeResponse.ok) {
         throw new Error(result.error || "Upload failed.");
       }
 

@@ -1,5 +1,6 @@
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { createClient } from "@sanity/client";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const previewDurationSeconds = 20;
 
@@ -95,6 +96,22 @@ export function getFileExtension(fileName: string) {
   return match ? `.${match[1].toLowerCase()}` : "";
 }
 
+export function getUploadContentType(value?: string | null) {
+  return value || "application/octet-stream";
+}
+
+export async function createR2PutUrl(key: string, contentType?: string | null) {
+  return getSignedUrl(
+    getR2Client(),
+    new PutObjectCommand({
+      Bucket: getEnv("R2_BUCKET_NAME"),
+      Key: key,
+      ContentType: getUploadContentType(contentType)
+    }),
+    { expiresIn: 15 * 60 }
+  );
+}
+
 export async function uploadFileToR2(file: File, key: string) {
   const bytes = Buffer.from(await file.arrayBuffer());
 
@@ -163,6 +180,72 @@ export async function uploadTrimmedPreviewToR2(file: File, key: string) {
   }
 
   return key;
+}
+
+async function streamToBuffer(stream: unknown) {
+  if (!stream || typeof stream !== "object" || !("transformToByteArray" in stream)) {
+    throw new Error("R2 preview stream was unavailable.");
+  }
+
+  const bytes = await (stream as { transformToByteArray: () => Promise<Uint8Array> }).transformToByteArray();
+  return Buffer.from(bytes);
+}
+
+export async function trimR2PreviewToR2(sourceKey: string, destinationKey: string) {
+  const [{ execFile }, { default: ffmpegPath }, { randomUUID }, { mkdir, readFile, rm, writeFile }, { tmpdir }, path, { promisify }] =
+    await Promise.all([
+      import("child_process"),
+      import("ffmpeg-static"),
+      import("crypto"),
+      import("fs/promises"),
+      import("os"),
+      import("path"),
+      import("util")
+    ]);
+  const execFileAsync = promisify(execFile);
+
+  if (!ffmpegPath) {
+    throw new Error("Preview trimming is unavailable because ffmpeg is not installed.");
+  }
+
+  const sourceObject = await getR2Client().send(
+    new GetObjectCommand({
+      Bucket: getEnv("R2_BUCKET_NAME"),
+      Key: sourceKey
+    })
+  );
+  const sourceBytes = await streamToBuffer(sourceObject.Body);
+  const workDir = path.join(tmpdir(), `prodbrogy-preview-${randomUUID()}`);
+  const inputPath = path.join(workDir, "input-audio");
+  const outputPath = path.join(workDir, "preview.mp3");
+
+  await mkdir(workDir, { recursive: true });
+
+  try {
+    await writeFile(inputPath, sourceBytes);
+    await execFileAsync(ffmpegPath, [
+      "-y",
+      "-i",
+      inputPath,
+      "-t",
+      String(previewDurationSeconds),
+      "-af",
+      "afade=t=out:st=18.5:d=1.5",
+      "-vn",
+      "-codec:a",
+      "libmp3lame",
+      "-b:a",
+      "192k",
+      outputPath
+    ]);
+
+    const previewBytes = await readFile(outputPath);
+    await uploadBufferToR2(previewBytes, destinationKey, "audio/mpeg");
+  } finally {
+    await rm(workDir, { force: true, recursive: true });
+  }
+
+  return destinationKey;
 }
 
 export function isR2ObjectPath(value?: string | null) {
