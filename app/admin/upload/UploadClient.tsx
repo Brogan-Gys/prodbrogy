@@ -223,7 +223,7 @@ export function UploadClient() {
           accent: getFormString(formData, "accent")
         })
       });
-      const result = await readApiJson<{ error?: string; id?: string }>(finalizeResponse);
+      const result = await readApiJson<{ error?: string; id?: string; warning?: string }>(finalizeResponse);
 
       if (!finalizeResponse.ok) {
         throw new Error(result.error || "Upload failed.");
@@ -231,7 +231,10 @@ export function UploadClient() {
 
       rememberAdminPassword(password);
       form.reset();
-      setState({ status: "success", message: `Sound added to the site. Sanity ID: ${result.id}` });
+      setState({
+        status: "success",
+        message: result.warning ? `Sound added, but ${result.warning}` : `Sound added to the site. Sanity ID: ${result.id}`
+      });
       await loadSounds();
     } catch (error) {
       setState({

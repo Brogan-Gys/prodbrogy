@@ -98,10 +98,17 @@ async function finalizeDirectUpload(request: Request) {
     return NextResponse.json({ error: "Add at least one preview or download file." }, { status: 400 });
   }
 
-  const previewUrl = body.previewTempKey ? await trimR2PreviewToR2(body.previewTempKey, `previews/${body.baseKey}.mp3`) : undefined;
+  let previewUrl: string | undefined;
+  let previewWarning: string | undefined;
 
   if (body.previewTempKey) {
-    await deleteFileFromR2(body.previewTempKey);
+    try {
+      previewUrl = await trimR2PreviewToR2(body.previewTempKey, `previews/${body.baseKey}.mp3`);
+      await deleteFileFromR2(body.previewTempKey);
+    } catch (error) {
+      previewUrl = body.previewTempKey;
+      previewWarning = `Preview trimming failed, so the original preview file was used: ${getErrorMessage(error)}`;
+    }
   }
 
   const accent = cleanString(body.accent);
@@ -124,7 +131,8 @@ async function finalizeDirectUpload(request: Request) {
   return NextResponse.json({
     id: document._id,
     previewUrl,
-    downloadUrl: body.downloadKey
+    downloadUrl: body.downloadKey,
+    warning: previewWarning
   });
 }
 
