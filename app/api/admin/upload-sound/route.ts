@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     previewUrl,
     downloadUrl,
     bpm: getNumber(formData, "bpm", null),
-    key: getString(formData, "key") || "N/A",
+    key: getString(formData, "key"),
     mood: getString(formData, "mood"),
     credits: getNumber(formData, "credits", 1) ?? 1,
     duration: getString(formData, "duration") || "0:00",

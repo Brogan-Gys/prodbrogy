@@ -158,7 +158,14 @@ export function SoundRow({ sound }: SoundRowProps) {
   const previewLimit = useMemo(() => getPreviewLimit(sound.category), [sound.category]);
 
   const meta = useMemo(
-    () => [sound.bpm && sound.bpm > 0 ? `${sound.bpm} BPM` : "Any BPM", sound.key, sound.mood].filter(Boolean).join(" / "),
+    () =>
+      [
+        sound.bpm && sound.bpm > 0 ? `${sound.bpm} BPM` : "",
+        sound.key && sound.key.toLowerCase() !== "n/a" ? sound.key : "",
+        sound.mood && sound.mood.toLowerCase() !== "untagged" ? sound.mood : ""
+      ]
+        .filter(Boolean)
+        .join(" / "),
     [sound.bpm, sound.key, sound.mood]
   );
 
@@ -398,7 +405,7 @@ export function SoundRow({ sound }: SoundRowProps) {
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-display text-2xl font-black uppercase leading-none">{sound.title}</p>
-                <p className="mt-1 text-sm font-bold uppercase text-ink/55">{meta}</p>
+                {meta ? <p className="mt-1 text-sm font-bold uppercase text-ink/55">{meta}</p> : null}
               </div>
               <span className={cn("border-2 border-ink px-2 py-1 font-display text-xs font-black uppercase", accentClass[sound.accent])}>
                 {sound.credits} cr

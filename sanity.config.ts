@@ -23,7 +23,6 @@ export default defineConfig({
           category: category.id,
           credits: 1,
           bpm: 0,
-          key: "N/A",
           accent: "volt",
           duration: "0:00"
         }

@@ -260,7 +260,7 @@ export function UploadClient() {
           </Field>
 
           <Field label="Key">
-            <input name="key" className="input" placeholder="F minor" defaultValue="N/A" />
+            <input name="key" className="input" placeholder="F minor" />
           </Field>
 
           <Field label="Mood">
