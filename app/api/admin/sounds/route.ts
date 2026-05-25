@@ -61,92 +61,108 @@ function cleanStringArray(value: unknown) {
   return Array.isArray(value) ? value.map(cleanString).filter(Boolean) : [];
 }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown admin API error.";
+}
+
 export async function POST(request: Request) {
-  const configError = getConfigError();
+  try {
+    const configError = getConfigError();
 
-  if (configError) {
-    return NextResponse.json({ error: configError }, { status: 500 });
+    if (configError) {
+      return NextResponse.json({ error: configError }, { status: 500 });
+    }
+
+    const body = (await request.json()) as { password?: string };
+
+    if (!isAdminPasswordValid(body.password ?? null)) {
+      return jsonAuthInvalid();
+    }
+
+    const sounds = await getSanityWriteClient().fetch(soundsQuery);
+    return NextResponse.json({ sounds });
+  } catch (error) {
+    return NextResponse.json({ error: `Could not load sounds: ${getErrorMessage(error)}` }, { status: 500 });
   }
-
-  const body = (await request.json()) as { password?: string };
-
-  if (!isAdminPasswordValid(body.password ?? null)) {
-    return jsonAuthInvalid();
-  }
-
-  const sounds = await getSanityWriteClient().fetch(soundsQuery);
-  return NextResponse.json({ sounds });
 }
 
 export async function PATCH(request: Request) {
-  const configError = getConfigError();
+  try {
+    const configError = getConfigError();
 
-  if (configError) {
-    return NextResponse.json({ error: configError }, { status: 500 });
+    if (configError) {
+      return NextResponse.json({ error: configError }, { status: 500 });
+    }
+
+    const body = (await request.json()) as UpdatePayload;
+
+    if (!isAdminPasswordValid(body.password ?? null)) {
+      return jsonAuthInvalid();
+    }
+
+    if (!body.id) {
+      return NextResponse.json({ error: "Missing sound ID." }, { status: 400 });
+    }
+
+    const accent = cleanString(body.accent);
+    const patch = {
+      title: cleanString(body.title),
+      category: cleanString(body.category),
+      producerName: cleanString(body.producerName),
+      bpm: typeof body.bpm === "number" && Number.isFinite(body.bpm) ? body.bpm : null,
+      key: cleanString(body.key),
+      mood: cleanString(body.mood),
+      credits: typeof body.credits === "number" && Number.isFinite(body.credits) ? body.credits : 1,
+      duration: cleanString(body.duration) || "0:00",
+      tags: cleanStringArray(body.tags),
+      accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt",
+      previewUrl: cleanString(body.previewUrl),
+      downloadUrl: cleanString(body.downloadUrl)
+    };
+
+    if (!patch.title || !patch.category) {
+      return NextResponse.json({ error: "Title and category are required." }, { status: 400 });
+    }
+
+    const sound = await getSanityWriteClient().patch(body.id).set(patch).commit();
+    return NextResponse.json({ sound });
+  } catch (error) {
+    return NextResponse.json({ error: `Could not save sound: ${getErrorMessage(error)}` }, { status: 500 });
   }
-
-  const body = (await request.json()) as UpdatePayload;
-
-  if (!isAdminPasswordValid(body.password ?? null)) {
-    return jsonAuthInvalid();
-  }
-
-  if (!body.id) {
-    return NextResponse.json({ error: "Missing sound ID." }, { status: 400 });
-  }
-
-  const accent = cleanString(body.accent);
-  const patch = {
-    title: cleanString(body.title),
-    category: cleanString(body.category),
-    producerName: cleanString(body.producerName),
-    bpm: typeof body.bpm === "number" && Number.isFinite(body.bpm) ? body.bpm : null,
-    key: cleanString(body.key),
-    mood: cleanString(body.mood),
-    credits: typeof body.credits === "number" && Number.isFinite(body.credits) ? body.credits : 1,
-    duration: cleanString(body.duration) || "0:00",
-    tags: cleanStringArray(body.tags),
-    accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt",
-    previewUrl: cleanString(body.previewUrl),
-    downloadUrl: cleanString(body.downloadUrl)
-  };
-
-  if (!patch.title || !patch.category) {
-    return NextResponse.json({ error: "Title and category are required." }, { status: 400 });
-  }
-
-  const sound = await getSanityWriteClient().patch(body.id).set(patch).commit();
-  return NextResponse.json({ sound });
 }
 
 export async function DELETE(request: Request) {
-  const configError = getConfigError();
+  try {
+    const configError = getConfigError();
 
-  if (configError) {
-    return NextResponse.json({ error: configError }, { status: 500 });
+    if (configError) {
+      return NextResponse.json({ error: configError }, { status: 500 });
+    }
+
+    const body = (await request.json()) as { password?: string; id?: string };
+
+    if (!isAdminPasswordValid(body.password ?? null)) {
+      return jsonAuthInvalid();
+    }
+
+    if (!body.id) {
+      return NextResponse.json({ error: "Missing sound ID." }, { status: 400 });
+    }
+
+    const client = getSanityWriteClient();
+    const existing = await client.fetch<{ previewUrl?: string; downloadUrl?: string } | null>(
+      `*[_type == "soundAsset" && _id == $id][0]{previewUrl, downloadUrl}`,
+      { id: body.id }
+    );
+
+    if (isR2Configured()) {
+      await Promise.all([deleteFileFromR2(existing?.previewUrl), deleteFileFromR2(existing?.downloadUrl)]);
+    }
+
+    await client.delete(body.id);
+
+    return NextResponse.json({ id: body.id });
+  } catch (error) {
+    return NextResponse.json({ error: `Could not delete sound: ${getErrorMessage(error)}` }, { status: 500 });
   }
-
-  const body = (await request.json()) as { password?: string; id?: string };
-
-  if (!isAdminPasswordValid(body.password ?? null)) {
-    return jsonAuthInvalid();
-  }
-
-  if (!body.id) {
-    return NextResponse.json({ error: "Missing sound ID." }, { status: 400 });
-  }
-
-  const client = getSanityWriteClient();
-  const existing = await client.fetch<{ previewUrl?: string; downloadUrl?: string } | null>(
-    `*[_type == "soundAsset" && _id == $id][0]{previewUrl, downloadUrl}`,
-    { id: body.id }
-  );
-
-  if (isR2Configured()) {
-    await Promise.all([deleteFileFromR2(existing?.previewUrl), deleteFileFromR2(existing?.downloadUrl)]);
-  }
-
-  await client.delete(body.id);
-
-  return NextResponse.json({ id: body.id });
 }
