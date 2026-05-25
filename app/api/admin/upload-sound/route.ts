@@ -75,6 +75,7 @@ export async function POST(request: Request) {
     _type: "soundAsset",
     title,
     category,
+    producerName: getString(formData, "producerName"),
     previewUrl,
     downloadUrl,
     bpm: getNumber(formData, "bpm", null),

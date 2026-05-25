@@ -12,12 +12,6 @@ import {
 import { cn } from "@/lib/utils";
 import type { SoundAsset } from "@/lib/sounds";
 
-declare global {
-  interface Window {
-    webkitAudioContext?: typeof AudioContext;
-  }
-}
-
 type SoundRowProps = {
   sound: SoundAsset;
 };
@@ -114,48 +108,10 @@ function getTimeLabel(currentTime: number, duration: number | null, previewLimit
   return `${formatTime(currentTime)} / ${formatTime(playableDuration)}`;
 }
 
-function normalizePeaks(peaks: number[]) {
-  const cleanPeaks = peaks.filter((peak) => Number.isFinite(peak) && peak > 0);
-
-  if (cleanPeaks.length === 0) {
-    return [];
-  }
-
-  return cleanPeaks.map((peak) => Math.max(12, Math.min(96, Math.round(peak))));
-}
-
-async function getAudioPeaks(audioUrl: string) {
-  const response = await fetch(audioUrl);
-  const buffer = await response.arrayBuffer();
-  const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
-  const context = new AudioContextConstructor();
-  const audioBuffer = await context.decodeAudioData(buffer);
-  const channelData = audioBuffer.getChannelData(0);
-  const barCount = 32;
-  const samplesPerBar = Math.max(1, Math.floor(channelData.length / barCount));
-  const rawPeaks = Array.from({ length: barCount }, (_, barIndex) => {
-    const start = barIndex * samplesPerBar;
-    const end = Math.min(channelData.length, start + samplesPerBar);
-    let total = 0;
-
-    for (let index = start; index < end; index += 1) {
-      total += Math.abs(channelData[index]);
-    }
-
-    return total / Math.max(1, end - start);
-  });
-  const maxPeak = Math.max(...rawPeaks, 0.001);
-
-  await context.close();
-
-  return normalizePeaks(rawPeaks.map((peak) => (peak / maxPeak) * 92));
-}
-
 export function SoundRow({ sound }: SoundRowProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [embedUrl, setEmbedUrl] = useState("");
   const [notice, setNotice] = useState("");
-  const [peaks, setPeaks] = useState<number[]>([]);
   const [playhead, setPlayhead] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
@@ -196,40 +152,6 @@ export function SoundRow({ sound }: SoundRowProps) {
       }
     };
   }, []);
-
-  useEffect(() => {
-    const previewSource = sound.previewUrl;
-
-    if (!previewSource) {
-      setPeaks([]);
-      return;
-    }
-
-    const audioUrl = getIframeSrc(previewSource).trim();
-
-    if (!audioFilePattern.test(audioUrl)) {
-      setPeaks([]);
-      return;
-    }
-
-    let cancelled = false;
-
-    getAudioPeaks(audioUrl)
-      .then((nextPeaks) => {
-        if (!cancelled) {
-          setPeaks(nextPeaks);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setPeaks([]);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [sound.previewUrl]);
 
   const clearPlaybackTimers = () => {
     if (progressTimerRef.current) {
@@ -415,6 +337,9 @@ export function SoundRow({ sound }: SoundRowProps) {
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-display text-2xl font-black uppercase leading-none">{sound.title}</p>
+                {sound.producerName ? (
+                  <p className="mt-1 text-xs font-black uppercase text-ink/70">Prod. {sound.producerName}</p>
+                ) : null}
                 {meta ? <p className="mt-1 text-sm font-bold uppercase text-ink/55">{meta}</p> : null}
               </div>
               <span className={cn("border-2 border-ink px-2 py-1 font-display text-xs font-black uppercase", accentClass[sound.accent])}>
@@ -422,25 +347,15 @@ export function SoundRow({ sound }: SoundRowProps) {
               </span>
             </div>
 
-            {peaks.length > 0 ? (
-              <div className="relative mt-4 flex h-16 items-end gap-1 overflow-hidden border-2 border-ink bg-bone px-2 py-2">
+            <div className="mt-4 border-2 border-ink bg-bone p-2">
+              <div className="h-3 overflow-hidden border-2 border-ink bg-white">
                 <span
-                  className="pointer-events-none absolute inset-y-0 left-0 bg-ink/10 transition-[width]"
+                  className={cn("block h-full transition-[width]", isPlaying ? accentClass[sound.accent] : "bg-ink/55")}
                   style={{ width: `${playhead * 100}%` }}
                   aria-hidden
                 />
-                {peaks.map((height, index) => (
-                  <span
-                    key={`${sound.id}-${index}`}
-                    className={cn(
-                      "relative z-10 flex-1 transition-all",
-                      index / Math.max(peaks.length - 1, 1) <= playhead || isPlaying ? accentClass[sound.accent] : "bg-ink/55"
-                    )}
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
               </div>
-            ) : null}
+            </div>
           </div>
         </div>
 

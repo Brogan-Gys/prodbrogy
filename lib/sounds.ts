@@ -11,12 +11,12 @@ export type SoundAsset = {
   id: string;
   title: string;
   category: string;
+  producerName: string;
   bpm: number | null;
   key: string;
   mood: string;
   credits: number;
   duration: string;
-  waveform: number[];
   tags: string[];
   accent: "volt" | "coral" | "cyan" | "plum";
   previewUrl?: string;

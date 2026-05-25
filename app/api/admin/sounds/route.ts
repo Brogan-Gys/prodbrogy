@@ -13,6 +13,7 @@ const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   "id": _id,
   title,
   category,
+  "producerName": coalesce(producerName, ""),
   bpm,
   "key": coalesce(key, ""),
   "mood": coalesce(mood, ""),
@@ -31,6 +32,7 @@ type UpdatePayload = {
   id?: string;
   title?: string;
   category?: string;
+  producerName?: string;
   bpm?: number | null;
   key?: string;
   mood?: string;
@@ -97,6 +99,7 @@ export async function PATCH(request: Request) {
   const patch = {
     title: cleanString(body.title),
     category: cleanString(body.category),
+    producerName: cleanString(body.producerName),
     bpm: typeof body.bpm === "number" && Number.isFinite(body.bpm) ? body.bpm : null,
     key: cleanString(body.key),
     mood: cleanString(body.mood),

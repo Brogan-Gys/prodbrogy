@@ -26,6 +26,12 @@ export const soundAsset = defineType({
       validation: requiredString
     }),
     defineField({
+      name: "producerName",
+      title: "Producer Name",
+      type: "string",
+      description: "Optional credit for a collaborator or producer who helped create this sound."
+    }),
+    defineField({
       name: "previewUrl",
       title: "Preview URL or R2 Path",
       type: "string",

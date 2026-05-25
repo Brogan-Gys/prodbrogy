@@ -14,6 +14,7 @@ type AdminSound = {
   id: string;
   title: string;
   category: string;
+  producerName: string;
   bpm: number | null;
   key: string;
   mood: string;
@@ -121,6 +122,7 @@ export function UploadClient() {
       id,
       title: getFormString(formData, "title"),
       category: getFormString(formData, "category"),
+      producerName: getFormString(formData, "producerName"),
       bpm: getFormNumber(formData, "bpm"),
       key: getFormString(formData, "key"),
       mood: getFormString(formData, "mood"),
@@ -237,6 +239,10 @@ export function UploadClient() {
             </select>
           </Field>
 
+          <Field label="Producer name">
+            <input name="producerName" className="input" placeholder="Collaborator or producer credit" />
+          </Field>
+
           <Field label="Accent">
             <select name="accent" className="input" defaultValue="volt">
               {accents.map((accent) => (
@@ -326,6 +332,9 @@ export function UploadClient() {
                       </option>
                     ))}
                   </select>
+                </Field>
+                <Field label="Producer name">
+                  <input name="producerName" className="input" defaultValue={sound.producerName} />
                 </Field>
                 <Field label="BPM">
                   <input name="bpm" type="number" min="0" className="input" defaultValue={sound.bpm ?? ""} />
