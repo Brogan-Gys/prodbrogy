@@ -1,4 +1,4 @@
-import { Boxes, Drum, Flame, Layers3, Music2, Piano, type LucideIcon } from "lucide-react";
+import { Boxes, Flame, Layers3, Music2, Piano, type LucideIcon } from "lucide-react";
 
 export type SoundCategory = {
   id: string;
@@ -59,11 +59,5 @@ export const categories: SoundCategory[] = [
     label: "Starters",
     description: "Mini song seeds with tempo and key direction.",
     icon: Boxes
-  },
-  {
-    id: "drums",
-    label: "Drum sounds",
-    description: "Kicks, snares, hats, rims, and percussion.",
-    icon: Drum
   }
 ];
