@@ -19,7 +19,6 @@ type AdminSound = {
   mood: string;
   credits: number;
   duration: string;
-  waveform: number[];
   tags: string[];
   accent: "volt" | "coral" | "cyan" | "plum";
   previewUrl?: string;
@@ -34,14 +33,6 @@ function parseCsv(value: string) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
-}
-
-function parseWaveform(value: string) {
-  return value
-    .split(",")
-    .map((item) => Number(item.trim()))
-    .filter((item) => Number.isFinite(item))
-    .slice(0, 32);
 }
 
 function getFormString(formData: FormData, key: string) {
@@ -135,7 +126,6 @@ export function UploadClient() {
       mood: getFormString(formData, "mood"),
       credits: getFormNumber(formData, "credits") ?? 1,
       duration: getFormString(formData, "duration"),
-      waveform: parseWaveform(getFormString(formData, "waveform")),
       tags: parseCsv(getFormString(formData, "tags")),
       accent: getFormString(formData, "accent"),
       previewUrl: getFormString(formData, "previewUrl"),
@@ -289,17 +279,6 @@ export function UploadClient() {
             <input name="tags" className="input" placeholder="trap, piano, loop" />
           </Field>
 
-          <div className="lg:col-span-2">
-            <Field label="Waveform heights">
-              <input
-                name="waveform"
-                className="input"
-                placeholder="20, 44, 70, 36, 82, 55, 28, 64"
-                defaultValue="20, 44, 70, 36, 82, 55, 28, 64, 90, 48, 72, 32, 58, 86, 40, 66"
-              />
-            </Field>
-          </div>
-
           <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink pt-4 lg:col-span-2">
             <StatusText state={state} />
             <button
@@ -382,14 +361,9 @@ export function UploadClient() {
                     <input name="downloadUrl" className="input" defaultValue={sound.downloadUrl ?? ""} />
                   </Field>
                 </div>
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-4">
                   <Field label="Tags">
                     <input name="tags" className="input" defaultValue={sound.tags.join(", ")} />
-                  </Field>
-                </div>
-                <div className="lg:col-span-2">
-                  <Field label="Waveform heights">
-                    <input name="waveform" className="input" defaultValue={sound.waveform.join(", ")} />
                   </Field>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink pt-3 lg:col-span-4">

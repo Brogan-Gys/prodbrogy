@@ -55,13 +55,6 @@ export const soundAsset = defineType({
     }),
     defineField({ name: "duration", title: "Duration", type: "string", initialValue: "0:00" }),
     defineField({
-      name: "waveform",
-      title: "Waveform Heights",
-      type: "array",
-      of: [{ type: "number" }],
-      validation: (Rule) => Rule.max(32)
-    }),
-    defineField({
       name: "tags",
       title: "Tags",
       type: "array",

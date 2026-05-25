@@ -14,7 +14,7 @@ const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   "mood": coalesce(mood, "untagged"),
   "credits": coalesce(credits, 1),
   "duration": coalesce(duration, "0:00"),
-  "waveform": coalesce(waveform, [20, 44, 70, 36, 82, 55, 28, 64, 90, 48, 72, 32, 58, 86, 40, 66]),
+  "waveform": coalesce(waveform, []),
   "tags": coalesce(tags, []),
   "accent": coalesce(accent, "volt"),
   previewUrl,

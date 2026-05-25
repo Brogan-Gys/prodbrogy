@@ -18,7 +18,6 @@ const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   "mood": coalesce(mood, ""),
   "credits": coalesce(credits, 1),
   "duration": coalesce(duration, "0:00"),
-  "waveform": coalesce(waveform, []),
   "tags": coalesce(tags, []),
   "accent": coalesce(accent, "volt"),
   previewUrl,
@@ -37,7 +36,6 @@ type UpdatePayload = {
   mood?: string;
   credits?: number;
   duration?: string;
-  waveform?: number[];
   tags?: string[];
   accent?: string;
   previewUrl?: string;
@@ -59,12 +57,6 @@ function cleanString(value: unknown) {
 
 function cleanStringArray(value: unknown) {
   return Array.isArray(value) ? value.map(cleanString).filter(Boolean) : [];
-}
-
-function cleanWaveform(value: unknown) {
-  return Array.isArray(value)
-    ? value.map((height) => Number(height)).filter((height) => Number.isFinite(height)).slice(0, 32)
-    : [];
 }
 
 export async function POST(request: Request) {
@@ -110,7 +102,6 @@ export async function PATCH(request: Request) {
     mood: cleanString(body.mood),
     credits: typeof body.credits === "number" && Number.isFinite(body.credits) ? body.credits : 1,
     duration: cleanString(body.duration) || "0:00",
-    waveform: cleanWaveform(body.waveform),
     tags: cleanStringArray(body.tags),
     accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt",
     previewUrl: cleanString(body.previewUrl),

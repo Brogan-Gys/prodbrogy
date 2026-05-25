@@ -108,7 +108,7 @@ function normalizePeaks(peaks: number[]) {
   const cleanPeaks = peaks.filter((peak) => Number.isFinite(peak) && peak > 0);
 
   if (cleanPeaks.length === 0) {
-    return [18, 34, 52, 28, 66, 42, 24, 58, 74, 36, 62, 30, 48, 70, 40, 56];
+    return [];
   }
 
   return cleanPeaks.map((peak) => Math.max(12, Math.min(96, Math.round(peak))));
@@ -145,7 +145,7 @@ export function SoundRow({ sound }: SoundRowProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [embedUrl, setEmbedUrl] = useState("");
   const [notice, setNotice] = useState("");
-  const [peaks, setPeaks] = useState<number[]>(normalizePeaks(sound.waveform));
+  const [peaks, setPeaks] = useState<number[]>([]);
   const [playhead, setPlayhead] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
@@ -184,14 +184,14 @@ export function SoundRow({ sound }: SoundRowProps) {
     const previewSource = sound.previewUrl;
 
     if (!previewSource) {
-      setPeaks(normalizePeaks(sound.waveform));
+      setPeaks([]);
       return;
     }
 
     const audioUrl = getIframeSrc(previewSource).trim();
 
     if (!audioFilePattern.test(audioUrl)) {
-      setPeaks(normalizePeaks(sound.waveform));
+      setPeaks([]);
       return;
     }
 
@@ -205,14 +205,14 @@ export function SoundRow({ sound }: SoundRowProps) {
       })
       .catch(() => {
         if (!cancelled) {
-          setPeaks(normalizePeaks(sound.waveform));
+          setPeaks([]);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [sound.previewUrl, sound.waveform]);
+  }, [sound.previewUrl]);
 
   const clearPlaybackTimers = () => {
     if (progressTimerRef.current) {
@@ -405,23 +405,25 @@ export function SoundRow({ sound }: SoundRowProps) {
               </span>
             </div>
 
-            <div className="relative mt-4 flex h-16 items-end gap-1 overflow-hidden border-2 border-ink bg-bone px-2 py-2">
-              <span
-                className="pointer-events-none absolute inset-y-0 left-0 bg-ink/10 transition-[width]"
-                style={{ width: `${playhead * 100}%` }}
-                aria-hidden
-              />
-              {peaks.map((height, index) => (
+            {peaks.length > 0 ? (
+              <div className="relative mt-4 flex h-16 items-end gap-1 overflow-hidden border-2 border-ink bg-bone px-2 py-2">
                 <span
-                  key={`${sound.id}-${index}`}
-                  className={cn(
-                    "relative z-10 flex-1 transition-all",
-                    index / Math.max(peaks.length - 1, 1) <= playhead || isPlaying ? accentClass[sound.accent] : "bg-ink/55"
-                  )}
-                  style={{ height: `${height}%` }}
+                  className="pointer-events-none absolute inset-y-0 left-0 bg-ink/10 transition-[width]"
+                  style={{ width: `${playhead * 100}%` }}
+                  aria-hidden
                 />
-              ))}
-            </div>
+                {peaks.map((height, index) => (
+                  <span
+                    key={`${sound.id}-${index}`}
+                    className={cn(
+                      "relative z-10 flex-1 transition-all",
+                      index / Math.max(peaks.length - 1, 1) <= playhead || isPlaying ? accentClass[sound.accent] : "bg-ink/55"
+                    )}
+                    style={{ height: `${height}%` }}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
 

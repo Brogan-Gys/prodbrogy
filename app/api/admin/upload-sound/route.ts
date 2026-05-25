@@ -27,16 +27,6 @@ function getTags(value: string) {
     .filter(Boolean);
 }
 
-function getWaveform(value: string) {
-  const parsed = value
-    .split(",")
-    .map((height) => Number(height.trim()))
-    .filter((height) => Number.isFinite(height))
-    .slice(0, 32);
-
-  return parsed.length > 0 ? parsed : undefined;
-}
-
 function getFile(formData: FormData, key: string) {
   const value = formData.get(key);
   return value instanceof File && value.size > 0 ? value : null;
@@ -92,7 +82,6 @@ export async function POST(request: Request) {
     mood: getString(formData, "mood"),
     credits: getNumber(formData, "credits", 1) ?? 1,
     duration: getString(formData, "duration") || "0:00",
-    waveform: getWaveform(getString(formData, "waveform")),
     tags: getTags(getString(formData, "tags")),
     accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt"
   });
