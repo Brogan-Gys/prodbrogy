@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, type ReactNode, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2, Loader2, RefreshCw, Save, Trash2, UploadCloud } from "lucide-react";
 import Link from "next/link";
 import { categories } from "@/lib/sounds";
@@ -28,6 +28,13 @@ type AdminSound = {
 
 const uploadCategories = categories.filter((category) => category.id !== "all");
 const accents = ["volt", "coral", "cyan", "plum"] as const;
+const ADMIN_PASSWORD_STORAGE_KEY = "prodbrogy-admin-password";
+const ADMIN_PASSWORD_TTL_MS = 12 * 60 * 60 * 1000;
+
+type StoredAdminPassword = {
+  value: string;
+  expiresAt: number;
+};
 
 function parseCsv(value: string) {
   return value
@@ -51,11 +58,44 @@ function getFormNumber(formData: FormData, key: string) {
   return Number.isFinite(number) ? number : null;
 }
 
+function readStoredAdminPassword() {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(ADMIN_PASSWORD_STORAGE_KEY) || "null") as StoredAdminPassword | null;
+
+    if (!stored?.value || !stored.expiresAt || Date.now() > stored.expiresAt) {
+      window.localStorage.removeItem(ADMIN_PASSWORD_STORAGE_KEY);
+      return "";
+    }
+
+    return stored.value;
+  } catch {
+    return "";
+  }
+}
+
+function rememberAdminPassword(value: string) {
+  if (!value) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    ADMIN_PASSWORD_STORAGE_KEY,
+    JSON.stringify({
+      value,
+      expiresAt: Date.now() + ADMIN_PASSWORD_TTL_MS
+    })
+  );
+}
+
 export function UploadClient() {
   const [password, setPassword] = useState("");
   const [state, setState] = useState<UploadState>({ status: "idle", message: "" });
   const [sounds, setSounds] = useState<AdminSound[]>([]);
   const [loadingSounds, setLoadingSounds] = useState(false);
+
+  useEffect(() => {
+    setPassword(readStoredAdminPassword());
+  }, []);
 
   const loadSounds = async () => {
     setLoadingSounds(true);
@@ -73,6 +113,7 @@ export function UploadClient() {
         throw new Error(result.error || "Could not load sounds.");
       }
 
+      rememberAdminPassword(password);
       setSounds(result.sounds ?? []);
       setState({ status: "success", message: `Loaded ${result.sounds?.length ?? 0} sound${result.sounds?.length === 1 ? "" : "s"}.` });
     } catch (error) {
@@ -101,6 +142,7 @@ export function UploadClient() {
         throw new Error(result.error || "Upload failed.");
       }
 
+      rememberAdminPassword(password);
       form.reset();
       setState({ status: "success", message: `Sound added to the site. Sanity ID: ${result.id}` });
       await loadSounds();
@@ -146,6 +188,7 @@ export function UploadClient() {
         throw new Error(result.error || "Save failed.");
       }
 
+      rememberAdminPassword(password);
       setState({ status: "success", message: "Sound saved." });
       await loadSounds();
     } catch (error) {

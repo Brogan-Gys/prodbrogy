@@ -7,9 +7,11 @@ import type { SoundAsset } from "@/lib/sounds";
 
 type SoundLibraryProps = {
   sounds: SoundAsset[];
+  downloadedIds?: string[];
+  onDownloadRecorded?: (sound: SoundAsset) => void;
 };
 
-export function SoundLibrary({ sounds }: SoundLibraryProps) {
+export function SoundLibrary({ sounds, downloadedIds = [], onDownloadRecorded }: SoundLibraryProps) {
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,7 +29,14 @@ export function SoundLibrary({ sounds }: SoundLibraryProps) {
   return (
     <div ref={listRef} className="space-y-3">
       {sounds.length > 0 ? (
-        sounds.map((sound) => <SoundRow key={sound.id} sound={sound} />)
+        sounds.map((sound) => (
+          <SoundRow
+            key={sound.id}
+            sound={sound}
+            isDownloaded={downloadedIds.includes(sound.id)}
+            onDownloadRecorded={onDownloadRecorded}
+          />
+        ))
       ) : (
         <div className="border-2 border-ink bg-white p-8 text-center shadow-hard">
           <p className="font-display text-2xl font-black uppercase">No sounds found</p>

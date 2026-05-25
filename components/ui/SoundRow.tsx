@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, Pause, Play, X } from "lucide-react";
+import { ArrowDownToLine, CheckCircle2, Pause, Play, X } from "lucide-react";
 import {
   CREDIT_STORAGE_KEY,
   DAILY_CREDIT_LIMIT,
@@ -14,6 +14,8 @@ import type { SoundAsset } from "@/lib/sounds";
 
 type SoundRowProps = {
   sound: SoundAsset;
+  isDownloaded?: boolean;
+  onDownloadRecorded?: (sound: SoundAsset) => void;
 };
 
 const accentClass = {
@@ -108,7 +110,7 @@ function getTimeLabel(currentTime: number, duration: number | null, previewLimit
   return `${formatTime(currentTime)} / ${formatTime(playableDuration)}`;
 }
 
-export function SoundRow({ sound }: SoundRowProps) {
+export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: SoundRowProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [embedUrl, setEmbedUrl] = useState("");
   const [notice, setNotice] = useState("");
@@ -296,6 +298,7 @@ export function SoundRow({ sound }: SoundRowProps) {
 
     window.localStorage.setItem(CREDIT_STORAGE_KEY, JSON.stringify({ ...state, used: nextUsed }));
     window.dispatchEvent(new Event("credits:changed"));
+    onDownloadRecorded?.(sound);
     const downloadUrl = getIframeSrc(sound.downloadUrl).trim();
     const isDirectFile = downloadableFilePattern.test(downloadUrl);
 
@@ -342,9 +345,17 @@ export function SoundRow({ sound }: SoundRowProps) {
                 ) : null}
                 {meta ? <p className="mt-1 text-sm font-bold uppercase text-ink/55">{meta}</p> : null}
               </div>
-              <span className={cn("border-2 border-ink px-2 py-1 font-display text-xs font-black uppercase", accentClass[sound.accent])}>
-                {sound.credits} cr
-              </span>
+              <div className="flex flex-wrap justify-end gap-2">
+                {isDownloaded ? (
+                  <span className="inline-flex items-center gap-1 border-2 border-ink bg-cyan px-2 py-1 font-display text-xs font-black uppercase">
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                    Downloaded
+                  </span>
+                ) : null}
+                <span className={cn("border-2 border-ink px-2 py-1 font-display text-xs font-black uppercase", accentClass[sound.accent])}>
+                  {sound.credits} cr
+                </span>
+              </div>
             </div>
 
             <div className="mt-4 border-2 border-ink bg-bone p-2">

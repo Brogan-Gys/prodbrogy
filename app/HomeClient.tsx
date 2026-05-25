@@ -1,27 +1,56 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ArrowDownToLine, Disc3, Search, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowDownToLine, CheckCircle2, Disc3, Search, Sparkles } from "lucide-react";
 import { Hero } from "@/components/sections/Hero";
 import { SoundLibrary } from "@/components/sections/SoundLibrary";
 import { CategoryRail } from "@/components/ui/CategoryRail";
 import { CreditMeter } from "@/components/ui/CreditMeter";
 import { StatPill } from "@/components/ui/StatPill";
 import { categories, type SoundAsset } from "@/lib/sounds";
+import { cn } from "@/lib/utils";
 
 type HomeClientProps = {
   sounds: SoundAsset[];
 };
 
+const DOWNLOAD_HISTORY_KEY = "prodbrogy-download-history";
+
+type LibraryView = "all" | "downloaded";
+
+function readDownloadHistory() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(DOWNLOAD_HISTORY_KEY) || "[]") as string[];
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export function HomeClient({ sounds }: HomeClientProps) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [query, setQuery] = useState("");
+  const [libraryView, setLibraryView] = useState<LibraryView>("all");
+  const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setDownloadedIds(readDownloadHistory());
+  }, []);
+
+  const recordDownload = (sound: SoundAsset) => {
+    setDownloadedIds((current) => {
+      const next = Array.from(new Set([...current, sound.id]));
+      window.localStorage.setItem(DOWNLOAD_HISTORY_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
 
   const filteredSounds = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return sounds.filter((sound) => {
       const categoryMatch = activeCategory === "all" || sound.category === activeCategory;
+      const downloadedMatch = libraryView === "all" || downloadedIds.includes(sound.id);
       const searchMatch =
         normalizedQuery.length === 0 ||
         [sound.title, sound.key, sound.mood, sound.bpm?.toString() ?? "any bpm", sound.tags.join(" ")]
@@ -29,9 +58,9 @@ export function HomeClient({ sounds }: HomeClientProps) {
           .toLowerCase()
           .includes(normalizedQuery);
 
-      return categoryMatch && searchMatch;
+      return categoryMatch && downloadedMatch && searchMatch;
     });
-  }, [activeCategory, query, sounds]);
+  }, [activeCategory, downloadedIds, libraryView, query, sounds]);
 
   return (
     <main className="grain min-h-screen">
@@ -41,6 +70,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
         <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
           <div className="flex flex-wrap gap-2">
             <StatPill icon={Disc3} label="Assets" value={`${sounds.length}`} tone="dark" />
+            <StatPill icon={CheckCircle2} label="Saved" value={`${downloadedIds.length}`} tone="dark" />
             <StatPill icon={Sparkles} label="Fresh" value="Weekly" tone="coral" />
             <StatPill icon={ArrowDownToLine} label="Daily cap" value="12 credits" tone="volt" />
           </div>
@@ -57,6 +87,25 @@ export function HomeClient({ sounds }: HomeClientProps) {
           </aside>
 
           <div className="space-y-3">
+            <div className="grid grid-cols-2 border-2 border-ink bg-white p-1 shadow-hard sm:max-w-sm">
+              {[
+                { id: "all", label: "All sounds" },
+                { id: "downloaded", label: "My downloads" }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setLibraryView(item.id as LibraryView)}
+                  className={cn(
+                    "h-10 font-display text-xs font-black uppercase transition",
+                    libraryView === item.id ? "bg-ink text-bone" : "bg-white text-ink hover:bg-bone"
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
             <label className="flex h-14 items-center gap-3 border-2 border-ink bg-white px-4 shadow-hard">
               <Search className="h-5 w-5 shrink-0" aria-hidden />
               <input
@@ -67,7 +116,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
               />
             </label>
 
-            <SoundLibrary sounds={filteredSounds} />
+            <SoundLibrary sounds={filteredSounds} downloadedIds={downloadedIds} onDownloadRecorded={recordDownload} />
           </div>
         </div>
       </section>
