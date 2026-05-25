@@ -39,7 +39,7 @@ For faster publishing, open the private admin at:
 http://localhost:3000/admin/upload
 ```
 
-The uploader asks for `ADMIN_UPLOAD_PASSWORD`, uploads the selected preview/download files to R2, and creates the matching `soundAsset` document in Sanity. Preview audio uploads are automatically converted into 20-second MP3 previews with a short fade-out before they are saved to R2. Create `SANITY_API_WRITE_TOKEN` from Sanity Manage with write access to the dataset. Create the R2 access key in Cloudflare with permission to write to the bucket.
+The uploader asks for `ADMIN_UPLOAD_PASSWORD`, uploads the selected preview/download files to R2, and creates the matching `soundAsset` document in Sanity. Preview audio is optional when the download file is already an audio file; the site can use that same file for the capped browser preview. Create `SANITY_API_WRITE_TOKEN` from Sanity Manage with write access to the dataset. Create the R2 access key in Cloudflare with permission to write to the bucket.
 
 Large files upload directly from the browser to R2 using signed upload URLs, so the R2 bucket needs CORS rules that allow `PUT` from the deployed site domain and local dev domain.
 

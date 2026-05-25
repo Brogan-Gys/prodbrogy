@@ -15,6 +15,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const accents = ["volt", "coral", "cyan", "plum"] as const;
+const audioPathPattern = /\.(mp3|wav|m4a|ogg|flac|webm)(\?|#|$)?/i;
 
 type FinalizeUploadRequest = {
   password?: string;
@@ -76,6 +77,10 @@ function cleanNumber(value: unknown, fallback: number | null) {
   return value;
 }
 
+function isAudioPath(value?: string | null) {
+  return Boolean(value && audioPathPattern.test(value));
+}
+
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown upload error.";
 }
@@ -109,6 +114,8 @@ async function finalizeDirectUpload(request: Request) {
       previewUrl = body.previewTempKey;
       previewWarning = `Preview trimming failed, so the original preview file was used: ${getErrorMessage(error)}`;
     }
+  } else if (isAudioPath(body.downloadKey)) {
+    previewUrl = body.downloadKey;
   }
 
   const accent = cleanString(body.accent);
@@ -171,10 +178,14 @@ export async function POST(request: Request) {
     const uniqueId = Date.now().toString(36);
     const baseKey = `${baseSlug}-${uniqueId}`;
 
-    const previewUrl = previewFile ? await uploadTrimmedPreviewToR2(previewFile, `previews/${baseKey}.mp3`) : undefined;
     const downloadUrl = downloadFile
       ? await uploadFileToR2(downloadFile, `downloads/${baseKey}${getFileExtension(downloadFile.name)}`)
       : undefined;
+    const previewUrl = previewFile
+      ? await uploadTrimmedPreviewToR2(previewFile, `previews/${baseKey}.mp3`)
+      : isAudioPath(downloadUrl)
+        ? downloadUrl
+        : undefined;
 
     const accent = getString(formData, "accent");
 
