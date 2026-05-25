@@ -87,6 +87,20 @@ function rememberAdminPassword(value: string) {
   );
 }
 
+async function readApiJson<T>(response: Response): Promise<T> {
+  const text = await response.text();
+
+  if (!text) {
+    return {} as T;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return { error: text.slice(0, 180) || "The server returned an unreadable response." } as T;
+  }
+}
+
 export function UploadClient() {
   const [password, setPassword] = useState("");
   const [state, setState] = useState<UploadState>({ status: "idle", message: "" });
@@ -107,7 +121,7 @@ export function UploadClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password })
       });
-      const result = (await response.json()) as { error?: string; sounds?: AdminSound[] };
+      const result = await readApiJson<{ error?: string; sounds?: AdminSound[] }>(response);
 
       if (!response.ok) {
         throw new Error(result.error || "Could not load sounds.");
@@ -136,7 +150,7 @@ export function UploadClient() {
         method: "POST",
         body: formData
       });
-      const result = (await response.json()) as { error?: string; id?: string };
+      const result = await readApiJson<{ error?: string; id?: string }>(response);
 
       if (!response.ok) {
         throw new Error(result.error || "Upload failed.");
@@ -182,7 +196,7 @@ export function UploadClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      const result = (await response.json()) as { error?: string };
+      const result = await readApiJson<{ error?: string }>(response);
 
       if (!response.ok) {
         throw new Error(result.error || "Save failed.");
@@ -211,7 +225,7 @@ export function UploadClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password, id: sound.id })
       });
-      const result = (await response.json()) as { error?: string };
+      const result = await readApiJson<{ error?: string }>(response);
 
       if (!response.ok) {
         throw new Error(result.error || "Delete failed.");

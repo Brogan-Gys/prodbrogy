@@ -1,14 +1,6 @@
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { createClient } from "@sanity/client";
-import { execFile } from "child_process";
-import ffmpegPath from "ffmpeg-static";
-import { randomUUID } from "crypto";
-import { mkdir, readFile, rm, writeFile } from "fs/promises";
-import { tmpdir } from "os";
-import path from "path";
-import { promisify } from "util";
 
-const execFileAsync = promisify(execFile);
 const previewDurationSeconds = 20;
 
 const requiredEnv = [
@@ -124,6 +116,18 @@ async function uploadBufferToR2(bytes: Buffer, key: string, contentType: string)
 }
 
 export async function uploadTrimmedPreviewToR2(file: File, key: string) {
+  const [{ execFile }, { default: ffmpegPath }, { randomUUID }, { mkdir, readFile, rm, writeFile }, { tmpdir }, path, { promisify }] =
+    await Promise.all([
+      import("child_process"),
+      import("ffmpeg-static"),
+      import("crypto"),
+      import("fs/promises"),
+      import("os"),
+      import("path"),
+      import("util")
+    ]);
+  const execFileAsync = promisify(execFile);
+
   if (!ffmpegPath) {
     throw new Error("Preview trimming is unavailable because ffmpeg is not installed.");
   }
