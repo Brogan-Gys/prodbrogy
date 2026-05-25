@@ -351,7 +351,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
               <div>
                 <p className="font-display text-2xl font-black uppercase leading-none">{sound.title}</p>
                 {sound.producerName ? (
-                  <p className="mt-1 text-xs font-black uppercase text-ink/70">Prod. {sound.producerName}</p>
+                  <p className="mt-1 text-xs font-black uppercase text-ink/70">Collab with {sound.producerName}</p>
                 ) : null}
                 {meta ? <p className="mt-1 text-sm font-bold uppercase text-ink/55">{meta}</p> : null}
               </div>
