@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowDownToLine, CheckCircle2, Disc3, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { Hero } from "@/components/sections/Hero";
 import { SoundLibrary } from "@/components/sections/SoundLibrary";
+import { CategoryRail } from "@/components/ui/CategoryRail";
 import { CreditMeter } from "@/components/ui/CreditMeter";
 import { SocialCreditBonus } from "@/components/ui/SocialCreditBonus";
 import { StatPill } from "@/components/ui/StatPill";
@@ -93,59 +94,65 @@ export function HomeClient({ sounds }: HomeClientProps) {
         <SocialCreditBonus />
         <SubmissionCallout />
 
-        <div className="space-y-3">
-          <div className="grid gap-2 border-2 border-ink bg-white p-2 shadow-hard lg:grid-cols-[1fr_170px_170px_170px_auto]">
-            <label className="flex h-12 items-center gap-3 border-2 border-ink bg-bone px-3">
-              <Search className="h-5 w-5 shrink-0" aria-hidden />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search sounds..."
-                className="h-full min-w-0 flex-1 bg-transparent font-display text-sm outline-none placeholder:text-ink/45"
-              />
-            </label>
+        <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
+          <aside className="hidden lg:sticky lg:top-5 lg:block lg:self-start">
+            <CategoryRail categories={categories} activeCategory={activeCategory} onSelectCategory={setActiveCategory} />
+          </aside>
 
-            <select
-              value={activeCategory}
-              onChange={(event) => setActiveCategory(event.target.value)}
-              className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none"
-              aria-label="Filter category"
-            >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-3">
+            <div className="grid gap-2 border-2 border-ink bg-white p-2 shadow-hard lg:grid-cols-[1fr_170px_170px_auto]">
+              <label className="flex h-12 items-center gap-3 border-2 border-ink bg-bone px-3">
+                <Search className="h-5 w-5 shrink-0" aria-hidden />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search sounds..."
+                  className="h-full min-w-0 flex-1 bg-transparent font-display text-sm outline-none placeholder:text-ink/45"
+                />
+              </label>
 
-            <select
-              value={libraryView}
-              onChange={(event) => setLibraryView(event.target.value as LibraryView)}
-              className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none"
-              aria-label="Filter downloads"
-            >
-              <option value="all">All sounds</option>
-              <option value="downloaded">Downloaded</option>
-            </select>
+              <select
+                value={activeCategory}
+                onChange={(event) => setActiveCategory(event.target.value)}
+                className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none lg:hidden"
+                aria-label="Filter category"
+              >
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              value={sortMode}
-              onChange={(event) => setSortMode(event.target.value as SortMode)}
-              className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none"
-              aria-label="Sort sounds"
-            >
-              <option value="fresh">Newest</option>
-              <option value="title">A-Z</option>
-              <option value="bpm">BPM</option>
-            </select>
+              <select
+                value={libraryView}
+                onChange={(event) => setLibraryView(event.target.value as LibraryView)}
+                className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none"
+                aria-label="Filter downloads"
+              >
+                <option value="all">All sounds</option>
+                <option value="downloaded">Downloaded</option>
+              </select>
 
-            <div className="flex h-12 items-center justify-center gap-2 border-2 border-ink bg-ink px-3 font-display text-xs font-black uppercase text-bone shadow-[6px_6px_0_#ffffff]">
-              <SlidersHorizontal className="h-4 w-4" aria-hidden />
-              {filteredSounds.length}
+              <select
+                value={sortMode}
+                onChange={(event) => setSortMode(event.target.value as SortMode)}
+                className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none"
+                aria-label="Sort sounds"
+              >
+                <option value="fresh">Newest</option>
+                <option value="title">A-Z</option>
+                <option value="bpm">BPM</option>
+              </select>
+
+              <div className="flex h-12 items-center justify-center gap-2 border-2 border-ink bg-ink px-3 font-display text-xs font-black uppercase text-bone shadow-[6px_6px_0_#ffffff]">
+                <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                {filteredSounds.length}
+              </div>
             </div>
-          </div>
 
-          <SoundLibrary sounds={filteredSounds} downloadedIds={downloadedIds} onDownloadRecorded={recordDownload} />
+            <SoundLibrary sounds={filteredSounds} downloadedIds={downloadedIds} onDownloadRecorded={recordDownload} />
+          </div>
         </div>
       </section>
     </main>
