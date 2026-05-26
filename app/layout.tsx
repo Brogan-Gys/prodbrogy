@@ -17,13 +17,13 @@ const space = Space_Grotesk({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://prodbrogy.com"),
   title: {
-    default: "ProdBrogy Sound Supply",
-    template: "%s | ProdBrogy"
+    default: "Prodbrogy Sound Supply",
+    template: "%s | Prodbrogy"
   },
-  description: "Download MIDI, loops, phrases, one shots, and starter ideas from the ProdBrogy sound vault.",
-  applicationName: "ProdBrogy",
+  description: "Download MIDI, loops, phrases, one shots, and starter ideas from the Prodbrogy sound vault.",
+  applicationName: "Prodbrogy",
   keywords: [
-    "ProdBrogy",
+    "Prodbrogy",
     "producer sounds",
     "MIDI downloads",
     "loop kits",
@@ -31,26 +31,26 @@ export const metadata: Metadata = {
     "beat maker samples",
     "music production"
   ],
-  authors: [{ name: "ProdBrogy" }],
-  creator: "ProdBrogy",
-  publisher: "ProdBrogy",
+  authors: [{ name: "Prodbrogy" }],
+  creator: "Prodbrogy",
+  publisher: "Prodbrogy",
   category: "music",
   icons: {
-    icon: "/shape.png",
-    apple: "/shape.png"
+    icon: "/icon.png",
+    apple: "/apple-icon.png"
   },
   openGraph: {
-    title: "ProdBrogy Sound Supply",
+    title: "Prodbrogy Sound Supply",
     description: "A credit-based sound vault for MIDI, loops, phrases, one shots, and starter ideas.",
     url: "/",
-    siteName: "ProdBrogy",
+    siteName: "Prodbrogy",
     type: "website",
     locale: "en_US"
   },
   twitter: {
     card: "summary",
-    title: "ProdBrogy Sound Supply",
-    description: "Download MIDI, loops, phrases, one shots, and starter ideas from the ProdBrogy sound vault."
+    title: "Prodbrogy Sound Supply",
+    description: "Download MIDI, loops, phrases, one shots, and starter ideas from the Prodbrogy sound vault."
   },
   robots: {
     index: true,
