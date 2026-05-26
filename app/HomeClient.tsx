@@ -6,6 +6,7 @@ import { Hero } from "@/components/sections/Hero";
 import { SoundLibrary } from "@/components/sections/SoundLibrary";
 import { CategoryRail } from "@/components/ui/CategoryRail";
 import { CreditMeter } from "@/components/ui/CreditMeter";
+import { Footer } from "@/components/ui/Footer";
 import { SocialCreditBonus } from "@/components/ui/SocialCreditBonus";
 import { StatPill } from "@/components/ui/StatPill";
 import { SubmissionCallout } from "@/components/ui/SubmissionCallout";
@@ -155,6 +156,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
           </div>
         </div>
       </section>
+      <Footer />
     </main>
   );
 }

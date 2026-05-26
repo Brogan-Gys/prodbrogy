@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, CheckCircle2, Pause, Play, X } from "lucide-react";
+import { ArrowDownToLine, CheckCircle2, Loader2, Pause, Play, X } from "lucide-react";
 import {
   CREDIT_STORAGE_KEY,
   getDailyCreditTotal,
@@ -122,6 +122,7 @@ function getTimeLabel(currentTime: number, duration: number | null, previewLimit
 
 export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: SoundRowProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [embedUrl, setEmbedUrl] = useState("");
   const [notice, setNotice] = useState("");
   const [playhead, setPlayhead] = useState(0);
@@ -188,6 +189,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
       audio.volume = 1;
     }
 
+    setIsAudioLoading(false);
     setIsPlaying(false);
     setPlayhead(0);
     setCurrentTime(0);
@@ -242,6 +244,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
     const previewSource = sound.previewUrl;
 
     if (!previewSource) {
+      setIsAudioLoading(false);
       setIsPlaying((current) => !current);
       flashNotice("Preview coming soon");
       return;
@@ -251,6 +254,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
 
     if (megaEmbedUrl) {
       audioRef.current?.pause();
+      setIsAudioLoading(false);
       setIsPlaying(false);
       setEmbedUrl(megaEmbedUrl);
       flashNotice("Mega preview opened");
@@ -260,6 +264,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
     const audioUrl = getIframeSrc(previewSource).trim();
 
     if (!audioFilePattern.test(audioUrl)) {
+      setIsAudioLoading(false);
       flashNotice("Preview link needs audio");
       return;
     }
@@ -281,16 +286,19 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
       return;
     }
 
+    setIsAudioLoading(true);
     audioRef.current.currentTime = 0;
     audioRef.current.volume = 1;
     fadeStartedRef.current = false;
     audioRef.current
       .play()
       .then(() => {
+        setIsAudioLoading(false);
         setIsPlaying(true);
         startProgressTracking(audioRef.current as HTMLAudioElement);
       })
       .catch(() => {
+        setIsAudioLoading(false);
         setIsPlaying(false);
         flashNotice("Preview unavailable");
       });
@@ -345,10 +353,16 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
             className={cn(
               "flex h-14 w-14 items-center justify-center border-2 border-ink transition hover:-translate-y-0.5",
               accentClass[sound.accent]
-            )}
-            aria-label={`${isPlaying ? "Pause" : "Play"} ${sound.title}`}
+            )} 
+            aria-label={`${isAudioLoading ? "Loading" : isPlaying ? "Pause" : "Play"} ${sound.title}`}
           >
-            {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current" />}
+            {isAudioLoading ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : isPlaying ? (
+              <Pause className="h-6 w-6" />
+            ) : (
+              <Play className="h-6 w-6 fill-current" />
+            )}
           </button>
 
           <div className="min-w-0">
@@ -395,7 +409,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
           </div>
           <div className="flex items-center justify-between gap-2">
             <p className="min-h-5 text-xs font-bold uppercase text-ink/55">
-              {notice || getTimeLabel(currentTime, audioDuration, previewLimit, sound.duration)}
+              {notice || (isAudioLoading ? "Loading preview" : getTimeLabel(currentTime, audioDuration, previewLimit, sound.duration))}
             </p>
             <button
               type="button"

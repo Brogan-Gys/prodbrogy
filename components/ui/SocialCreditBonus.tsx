@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, ExternalLink, Instagram, Star, Youtube } from "lucide-react";
+import { CheckCircle2, ExternalLink } from "lucide-react";
 import {
   CREDIT_STORAGE_KEY,
   SOCIAL_CREDIT_BONUS,
@@ -9,30 +9,7 @@ import {
   normalizeCreditState,
   type CreditState
 } from "@/lib/credits";
-
-const socialBonuses = [
-  {
-    id: "instagram",
-    label: "Instagram",
-    href: "https://instagram.com/prodbrogy",
-    Icon: Instagram,
-    tone: "bg-coral"
-  },
-  {
-    id: "youtube",
-    label: "YouTube",
-    href: "https://youtube.com/@prodbrogy",
-    Icon: Youtube,
-    tone: "bg-volt"
-  },
-  {
-    id: "beatstars",
-    label: "BeatStars",
-    href: "https://beatstars.com/prodbrogy",
-    Icon: Star,
-    tone: "bg-cyan"
-  }
-] as const;
+import { socialBonusLinks } from "@/lib/socials";
 
 function readCreditState() {
   const stored = window.localStorage.getItem(CREDIT_STORAGE_KEY);
@@ -70,6 +47,10 @@ export function SocialCreditBonus() {
   const claimedSocials = new Set(state.claimedSocialBonuses ?? []);
   const visitedSocialSet = new Set(visitedSocials);
 
+  if (claimedSocials.size >= socialBonusLinks.length) {
+    return null;
+  }
+
   return (
     <section className="grid gap-3 border-2 border-ink bg-white p-3 shadow-hard">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -80,7 +61,7 @@ export function SocialCreditBonus() {
       </div>
 
       <div className="grid gap-2 sm:grid-cols-3">
-        {socialBonuses.map(({ id, label, href, Icon, tone }) => {
+        {socialBonusLinks.map(({ id, label, href, Icon, tone }) => {
           const isClaimed = claimedSocials.has(id);
           const isVisited = visitedSocialSet.has(id);
 
