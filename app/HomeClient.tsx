@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDownToLine, CheckCircle2, Disc3, Search, Sparkles } from "lucide-react";
+import { ArrowDownToLine, CheckCircle2, Disc3, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { Hero } from "@/components/sections/Hero";
 import { SoundLibrary } from "@/components/sections/SoundLibrary";
-import { CategoryRail } from "@/components/ui/CategoryRail";
 import { CreditMeter } from "@/components/ui/CreditMeter";
 import { SocialCreditBonus } from "@/components/ui/SocialCreditBonus";
 import { StatPill } from "@/components/ui/StatPill";
 import { SubmissionCallout } from "@/components/ui/SubmissionCallout";
 import { categories, type SoundAsset } from "@/lib/sounds";
-import { cn } from "@/lib/utils";
 
 type HomeClientProps = {
   sounds: SoundAsset[];
@@ -19,6 +17,7 @@ type HomeClientProps = {
 const DOWNLOAD_HISTORY_KEY = "prodbrogy-download-history";
 
 type LibraryView = "all" | "downloaded";
+type SortMode = "fresh" | "title" | "bpm";
 
 function readDownloadHistory() {
   try {
@@ -33,6 +32,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [query, setQuery] = useState("");
   const [libraryView, setLibraryView] = useState<LibraryView>("all");
+  const [sortMode, setSortMode] = useState<SortMode>("fresh");
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
   const filteredSounds = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return sounds.filter((sound) => {
+    const nextSounds = sounds.filter((sound) => {
       const categoryMatch = activeCategory === "all" || sound.category === activeCategory;
       const downloadedMatch = libraryView === "all" || downloadedIds.includes(sound.id);
       const searchMatch =
@@ -62,7 +62,19 @@ export function HomeClient({ sounds }: HomeClientProps) {
 
       return categoryMatch && downloadedMatch && searchMatch;
     });
-  }, [activeCategory, downloadedIds, libraryView, query, sounds]);
+
+    return [...nextSounds].sort((a, b) => {
+      if (sortMode === "title") {
+        return a.title.localeCompare(b.title);
+      }
+
+      if (sortMode === "bpm") {
+        return (a.bpm ?? 9999) - (b.bpm ?? 9999);
+      }
+
+      return 0;
+    });
+  }, [activeCategory, downloadedIds, libraryView, query, sortMode, sounds]);
 
   return (
     <main className="grain min-h-screen">
@@ -81,47 +93,59 @@ export function HomeClient({ sounds }: HomeClientProps) {
         <SocialCreditBonus />
         <SubmissionCallout />
 
-        <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
-          <aside className="lg:sticky lg:top-5 lg:self-start">
-            <CategoryRail
-              categories={categories}
-              activeCategory={activeCategory}
-              onSelectCategory={setActiveCategory}
-            />
-          </aside>
-
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 border-2 border-ink bg-white p-1 shadow-hard sm:max-w-sm">
-              {[
-                { id: "all", label: "All sounds" },
-                { id: "downloaded", label: "My downloads" }
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setLibraryView(item.id as LibraryView)}
-                  className={cn(
-                    "h-10 font-display text-xs font-black uppercase transition",
-                    libraryView === item.id ? "bg-ink text-bone" : "bg-white text-ink hover:bg-bone"
-                  )}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
-            <label className="flex h-14 items-center gap-3 border-2 border-ink bg-white px-4 shadow-hard">
+        <div className="space-y-3">
+          <div className="grid gap-2 border-2 border-ink bg-white p-2 shadow-hard lg:grid-cols-[1fr_170px_170px_170px_auto]">
+            <label className="flex h-12 items-center gap-3 border-2 border-ink bg-bone px-3">
               <Search className="h-5 w-5 shrink-0" aria-hidden />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search tempo, mood, tag..."
-                className="h-full min-w-0 flex-1 bg-transparent font-display text-base outline-none placeholder:text-ink/45"
+                placeholder="Search sounds..."
+                className="h-full min-w-0 flex-1 bg-transparent font-display text-sm outline-none placeholder:text-ink/45"
               />
             </label>
 
-            <SoundLibrary sounds={filteredSounds} downloadedIds={downloadedIds} onDownloadRecorded={recordDownload} />
+            <select
+              value={activeCategory}
+              onChange={(event) => setActiveCategory(event.target.value)}
+              className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none"
+              aria-label="Filter category"
+            >
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={libraryView}
+              onChange={(event) => setLibraryView(event.target.value as LibraryView)}
+              className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none"
+              aria-label="Filter downloads"
+            >
+              <option value="all">All sounds</option>
+              <option value="downloaded">Downloaded</option>
+            </select>
+
+            <select
+              value={sortMode}
+              onChange={(event) => setSortMode(event.target.value as SortMode)}
+              className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none"
+              aria-label="Sort sounds"
+            >
+              <option value="fresh">Newest</option>
+              <option value="title">A-Z</option>
+              <option value="bpm">BPM</option>
+            </select>
+
+            <div className="flex h-12 items-center justify-center gap-2 border-2 border-ink bg-ink px-3 font-display text-xs font-black uppercase text-bone shadow-[6px_6px_0_#ffffff]">
+              <SlidersHorizontal className="h-4 w-4" aria-hidden />
+              {filteredSounds.length}
+            </div>
           </div>
+
+          <SoundLibrary sounds={filteredSounds} downloadedIds={downloadedIds} onDownloadRecorded={recordDownload} />
         </div>
       </section>
     </main>

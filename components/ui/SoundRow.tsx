@@ -289,7 +289,6 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
       .then(() => {
         setIsPlaying(true);
         startProgressTracking(audioRef.current as HTMLAudioElement);
-        flashNotice("Preview playing");
       })
       .catch(() => {
         setIsPlaying(false);
