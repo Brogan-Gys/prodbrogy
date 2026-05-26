@@ -82,10 +82,6 @@ function getSiteDownloadUrl(value: string, sound: SoundAsset) {
 }
 
 function getPreviewLimit(category: string) {
-  if (category === "starters") {
-    return null;
-  }
-
   if (category === "midi") {
     return 15;
   }
