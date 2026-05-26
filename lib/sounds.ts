@@ -49,7 +49,7 @@ export const categories: SoundCategory[] = [
   },
   {
     id: "oneshots",
-    label: "Shots",
+    label: "One shots",
     description: "Single hits for samplers and drum racks.",
     icon: Flame
   },
