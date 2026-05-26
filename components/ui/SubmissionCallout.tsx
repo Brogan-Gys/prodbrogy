@@ -2,7 +2,7 @@ import { Send } from "lucide-react";
 
 export function SubmissionCallout() {
   return (
-    <section className="grid gap-3 border-2 border-ink bg-ink p-4 text-bone shadow-hard md:grid-cols-[1fr_auto] md:items-center">
+    <section className="grid gap-3 border-2 border-ink bg-ink p-4 text-bone shadow-[6px_6px_0_#ffffff] md:grid-cols-[1fr_auto] md:items-center">
       <div className="min-w-0">
         <p className="font-display text-sm font-black uppercase text-bone/65">Made something?</p>
         <h2 className="font-display text-3xl font-black uppercase leading-none">Send it back</h2>

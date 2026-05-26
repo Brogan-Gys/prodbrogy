@@ -1,4 +1,4 @@
-export const DAILY_CREDIT_LIMIT = 20;
+export const DAILY_CREDIT_LIMIT = 12;
 export const SOCIAL_CREDIT_BONUS = 5;
 export const CREDIT_STORAGE_KEY = "prodbrogy-daily-credits";
 export const CATEGORY_CREDIT_COSTS: Record<string, number> = {

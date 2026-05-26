@@ -74,7 +74,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
             <StatPill icon={Disc3} label="Assets" value={`${sounds.length}`} tone="dark" />
             <StatPill icon={CheckCircle2} label="Saved" value={`${downloadedIds.length}`} tone="dark" />
             <StatPill icon={Sparkles} label="Fresh" value="Weekly" tone="coral" />
-            <StatPill icon={ArrowDownToLine} label="Daily base" value="20 credits" tone="volt" />
+            <StatPill icon={ArrowDownToLine} label="Daily base" value="12 credits" tone="volt" />
           </div>
           <CreditMeter />
         </div>

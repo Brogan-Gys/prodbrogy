@@ -13,7 +13,7 @@ export function StatPill({ icon: Icon, label, value, tone }: StatPillProps) {
     <div
       className={cn(
         "flex min-h-14 items-center gap-3 border-2 border-ink px-3 shadow-hard",
-        tone === "dark" && "bg-ink text-bone",
+        tone === "dark" && "bg-ink text-bone shadow-[6px_6px_0_#ffffff]",
         tone === "coral" && "bg-coral text-ink",
         tone === "volt" && "bg-volt text-ink"
       )}
