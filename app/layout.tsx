@@ -15,8 +15,47 @@ const space = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "ProdBrogy Sound Vault",
-  description: "A curated production library for MIDI, loops, phrases, one shots, starters, and drum sounds."
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://prodbrogy.com"),
+  title: {
+    default: "ProdBrogy Sound Supply",
+    template: "%s | ProdBrogy"
+  },
+  description: "Download MIDI, loops, phrases, one shots, and starter ideas from the ProdBrogy sound vault.",
+  applicationName: "ProdBrogy",
+  keywords: [
+    "ProdBrogy",
+    "producer sounds",
+    "MIDI downloads",
+    "loop kits",
+    "one shots",
+    "beat maker samples",
+    "music production"
+  ],
+  authors: [{ name: "ProdBrogy" }],
+  creator: "ProdBrogy",
+  publisher: "ProdBrogy",
+  category: "music",
+  icons: {
+    icon: "/shape.png",
+    apple: "/shape.png"
+  },
+  openGraph: {
+    title: "ProdBrogy Sound Supply",
+    description: "A credit-based sound vault for MIDI, loops, phrases, one shots, and starter ideas.",
+    url: "/",
+    siteName: "ProdBrogy",
+    type: "website",
+    locale: "en_US"
+  },
+  twitter: {
+    card: "summary",
+    title: "ProdBrogy Sound Supply",
+    description: "Download MIDI, loops, phrases, one shots, and starter ideas from the ProdBrogy sound vault."
+  },
+  robots: {
+    index: true,
+    follow: true
+  }
 };
 
 export default function RootLayout({
