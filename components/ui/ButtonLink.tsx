@@ -15,8 +15,8 @@ export function ButtonLink({ href, children, icon: Icon, variant = "dark", onCli
       href={href}
       onClick={onClick}
       className={cn(
-        "inline-flex h-12 items-center gap-2 border-2 border-ink px-4 font-display text-sm font-black uppercase shadow-hard transition hover:-translate-y-0.5",
-        variant === "dark" ? "bg-ink text-bone" : "bg-white text-ink"
+        "inline-flex h-12 items-center gap-2 border-2 border-ink px-4 font-display text-sm font-black uppercase transition hover:-translate-y-0.5",
+        variant === "dark" ? "bg-ink text-bone shadow-[6px_6px_0_#ffffff]" : "bg-white text-ink shadow-hard"
       )}
     >
       <Icon className="h-4 w-4" aria-hidden />
