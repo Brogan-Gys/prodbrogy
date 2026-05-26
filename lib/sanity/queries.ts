@@ -3,6 +3,13 @@ import { getCategoryCreditCost } from "@/lib/credits";
 import { getPublicAssetUrl } from "@/lib/storage";
 import type { SoundAsset } from "@/lib/sounds";
 
+type SoundFetchOptions = {
+  cache?: "force-cache" | "no-store";
+  next?: {
+    revalidate?: number | false;
+  };
+};
+
 const fetchOptions =
   process.env.NODE_ENV === "development" ? { cache: "no-store" as const } : { next: { revalidate: 60 } };
 
@@ -21,13 +28,13 @@ const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   downloadUrl
 }`;
 
-export async function getSounds(): Promise<SoundAsset[]> {
+export async function getSounds(options: SoundFetchOptions = fetchOptions): Promise<SoundAsset[]> {
   if (!hasSanityConfig) {
     return [];
   }
 
   try {
-    const sounds = await sanityClient.fetch<SoundAsset[]>(soundsQuery, {}, fetchOptions);
+    const sounds = await sanityClient.fetch<SoundAsset[]>(soundsQuery, {}, options);
 
     return sounds.map((sound) => ({
       ...sound,

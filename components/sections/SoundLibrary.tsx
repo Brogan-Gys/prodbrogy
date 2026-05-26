@@ -3,15 +3,17 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { SoundRow } from "@/components/ui/SoundRow";
+import { SoundLibrarySkeleton } from "@/components/ui/SoundRowSkeleton";
 import type { SoundAsset } from "@/lib/sounds";
 
 type SoundLibraryProps = {
   sounds: SoundAsset[];
   downloadedIds?: string[];
+  isRefreshing?: boolean;
   onDownloadRecorded?: (sound: SoundAsset) => void;
 };
 
-export function SoundLibrary({ sounds, downloadedIds = [], onDownloadRecorded }: SoundLibraryProps) {
+export function SoundLibrary({ sounds, downloadedIds = [], isRefreshing = false, onDownloadRecorded }: SoundLibraryProps) {
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,7 +30,9 @@ export function SoundLibrary({ sounds, downloadedIds = [], onDownloadRecorded }:
 
   return (
     <div ref={listRef} className="space-y-3">
-      {sounds.length > 0 ? (
+      {isRefreshing ? (
+        <SoundLibrarySkeleton count={sounds.length > 0 ? Math.min(2, sounds.length) : 4} />
+      ) : sounds.length > 0 ? (
         sounds.map((sound) => (
           <SoundRow
             key={sound.id}

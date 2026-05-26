@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDownToLine, CheckCircle2, Disc3, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { Hero } from "@/components/sections/Hero";
 import { SoundLibrary } from "@/components/sections/SoundLibrary";
@@ -20,6 +20,8 @@ const DOWNLOAD_HISTORY_KEY = "prodbrogy-download-history";
 
 type LibraryView = "all" | "downloaded";
 type SortMode = "fresh" | "title" | "bpm";
+const LIVE_UPDATE_INTERVAL_MS = 30000;
+const SKELETON_SWAP_DELAY_MS = 500;
 
 function readDownloadHistory() {
   try {
@@ -31,6 +33,9 @@ function readDownloadHistory() {
 }
 
 export function HomeClient({ sounds }: HomeClientProps) {
+  const [liveSounds, setLiveSounds] = useState(sounds);
+  const [isRefreshingSounds, setIsRefreshingSounds] = useState(false);
+  const soundSignatureRef = useRef(JSON.stringify(sounds));
   const [activeCategory, setActiveCategory] = useState("all");
   const [query, setQuery] = useState("");
   const [libraryView, setLibraryView] = useState<LibraryView>("all");
@@ -39,6 +44,72 @@ export function HomeClient({ sounds }: HomeClientProps) {
 
   useEffect(() => {
     setDownloadedIds(readDownloadHistory());
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    let isChecking = false;
+    let swapTimer: number | null = null;
+
+    const getSoundSignature = (value: SoundAsset[]) => JSON.stringify(value);
+
+    const refreshSounds = async () => {
+      if (isChecking) {
+        return;
+      }
+
+      isChecking = true;
+
+      try {
+        const response = await fetch("/api/sounds", { cache: "no-store" });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { sounds?: SoundAsset[] };
+        const nextSounds = Array.isArray(data.sounds) ? data.sounds : [];
+        const nextSignature = getSoundSignature(nextSounds);
+
+        if (!isMounted || nextSignature === soundSignatureRef.current) {
+          return;
+        }
+
+        soundSignatureRef.current = nextSignature;
+        setIsRefreshingSounds(true);
+        if (swapTimer) {
+          window.clearTimeout(swapTimer);
+        }
+
+        swapTimer = window.setTimeout(() => {
+          if (!isMounted) {
+            return;
+          }
+
+          setLiveSounds(nextSounds);
+          setIsRefreshingSounds(false);
+        }, SKELETON_SWAP_DELAY_MS);
+      } catch {
+        if (isMounted) {
+          setIsRefreshingSounds(false);
+        }
+      } finally {
+        isChecking = false;
+      }
+    };
+
+    const interval = window.setInterval(refreshSounds, LIVE_UPDATE_INTERVAL_MS);
+    window.addEventListener("focus", refreshSounds);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshSounds);
+
+      if (swapTimer) {
+        window.clearTimeout(swapTimer);
+      }
+    };
   }, []);
 
   const recordDownload = (sound: SoundAsset) => {
@@ -52,7 +123,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
   const filteredSounds = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    const nextSounds = sounds.filter((sound) => {
+    const nextSounds = liveSounds.filter((sound) => {
       const categoryMatch = activeCategory === "all" || sound.category === activeCategory;
       const downloadedMatch = libraryView === "all" || downloadedIds.includes(sound.id);
       const searchMatch =
@@ -76,7 +147,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
 
       return 0;
     });
-  }, [activeCategory, downloadedIds, libraryView, query, sortMode, sounds]);
+  }, [activeCategory, downloadedIds, libraryView, liveSounds, query, sortMode]);
 
   return (
     <main className="grain min-h-screen">
@@ -85,7 +156,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
       <section id="library" className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-8 pt-4 sm:px-6 lg:px-8">
         <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
           <div className="flex flex-wrap gap-2">
-            <StatPill icon={Disc3} label="Assets" value={`${sounds.length}`} tone="dark" />
+            <StatPill icon={Disc3} label="Assets" value={`${liveSounds.length}`} tone="dark" />
             <StatPill icon={CheckCircle2} label="Saved" value={`${downloadedIds.length}`} tone="dark" />
             <StatPill icon={Sparkles} label="Fresh" value="Weekly" tone="coral" />
             <StatPill icon={ArrowDownToLine} label="Daily base" value="12 credits" tone="volt" />
@@ -152,7 +223,12 @@ export function HomeClient({ sounds }: HomeClientProps) {
               </div>
             </div>
 
-            <SoundLibrary sounds={filteredSounds} downloadedIds={downloadedIds} onDownloadRecorded={recordDownload} />
+            <SoundLibrary
+              sounds={filteredSounds}
+              downloadedIds={downloadedIds}
+              isRefreshing={isRefreshingSounds}
+              onDownloadRecorded={recordDownload}
+            />
           </div>
         </div>
       </section>
