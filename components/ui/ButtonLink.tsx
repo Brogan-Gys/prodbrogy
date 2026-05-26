@@ -6,12 +6,14 @@ type ButtonLinkProps = {
   children: React.ReactNode;
   icon: LucideIcon;
   variant?: "dark" | "light";
+  onClick?: () => void;
 };
 
-export function ButtonLink({ href, children, icon: Icon, variant = "dark" }: ButtonLinkProps) {
+export function ButtonLink({ href, children, icon: Icon, variant = "dark", onClick }: ButtonLinkProps) {
   return (
     <a
       href={href}
+      onClick={onClick}
       className={cn(
         "inline-flex h-12 items-center gap-2 border-2 border-ink px-4 font-display text-sm font-black uppercase shadow-hard transition hover:-translate-y-0.5",
         variant === "dark" ? "bg-ink text-bone" : "bg-white text-ink"

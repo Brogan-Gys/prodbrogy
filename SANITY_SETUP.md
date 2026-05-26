@@ -8,6 +8,7 @@
 NEXT_PUBLIC_SANITY_PROJECT_ID=your_project_id
 NEXT_PUBLIC_SANITY_DATASET=production
 NEXT_PUBLIC_ASSET_BASE_URL=https://pub-471cfb80efa24404bc77c5c9793f45c7.r2.dev
+NEXT_PUBLIC_SUBMISSION_EMAIL=prodbrogy@gmail.com
 
 R2_ACCOUNT_ID=your_cloudflare_account_id
 R2_ACCESS_KEY_ID=your_r2_access_key_id
@@ -29,7 +30,7 @@ npm.cmd run dev
 http://localhost:3000/studio
 ```
 
-The frontend reads `soundAsset` documents from Sanity. Add a title, category, preview URL or R2 path, download URL or R2 path, credits, BPM, key, mood, waveform values, tags, and accent color.
+The frontend reads `soundAsset` documents from Sanity. Add a title, category, preview URL or R2 path, download URL or R2 path, credits, BPM, mood, waveform values, tags, and accent color.
 
 Store audio and ZIP files in Cloudflare R2, then put paths like `previews/kit-preview.mp3` and `downloads/kit.zip` in Sanity. The app turns those paths into public URLs using `NEXT_PUBLIC_ASSET_BASE_URL`. Full external URLs still work as fallbacks; Mega links will continue to open Mega's download page.
 

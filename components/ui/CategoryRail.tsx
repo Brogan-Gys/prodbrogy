@@ -14,7 +14,6 @@ export function CategoryRail({ categories, activeCategory, onSelectCategory }: C
     <div id="library" className="border-2 border-ink bg-white p-2 shadow-hard">
       <div className="border-b-2 border-ink px-3 py-3">
         <p className="font-display text-2xl font-black uppercase leading-none">Library</p>
-        <p className="mt-1 text-sm font-semibold text-ink/60">Choose a crate</p>
       </div>
       <div className="mt-2 grid gap-2">
         {categories.map((category) => {
@@ -27,7 +26,7 @@ export function CategoryRail({ categories, activeCategory, onSelectCategory }: C
               type="button"
               onClick={() => onSelectCategory(category.id)}
               className={cn(
-                "group grid min-h-20 grid-cols-[40px_1fr] items-center gap-3 border-2 border-ink px-3 text-left transition",
+                "group grid min-h-14 grid-cols-[40px_1fr] items-center gap-3 border-2 border-ink px-3 text-left transition",
                 isActive ? "bg-volt text-ink" : "bg-bone hover:bg-cyan"
               )}
             >
@@ -36,7 +35,6 @@ export function CategoryRail({ categories, activeCategory, onSelectCategory }: C
               </span>
               <span className="min-w-0">
                 <span className="block font-display text-sm font-black uppercase">{category.label}</span>
-                <span className="block text-xs font-semibold leading-4 text-ink/65">{category.description}</span>
               </span>
             </button>
           );

@@ -1,4 +1,5 @@
 import { sanityClient, hasSanityConfig } from "./client";
+import { getCategoryCreditCost } from "@/lib/credits";
 import { getPublicAssetUrl } from "@/lib/storage";
 import type { SoundAsset } from "@/lib/sounds";
 
@@ -11,7 +12,6 @@ const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   category,
   "producerName": coalesce(producerName, ""),
   bpm,
-  "key": coalesce(key, ""),
   "mood": coalesce(mood, ""),
   "credits": coalesce(credits, 1),
   "duration": coalesce(duration, "0:00"),
@@ -31,6 +31,7 @@ export async function getSounds(): Promise<SoundAsset[]> {
 
     return sounds.map((sound) => ({
       ...sound,
+      credits: getCategoryCreditCost(sound.category, sound.credits),
       previewUrl: getPublicAssetUrl(sound.previewUrl),
       downloadUrl: getPublicAssetUrl(sound.downloadUrl)
     }));

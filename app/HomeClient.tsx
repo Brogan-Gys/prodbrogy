@@ -6,7 +6,9 @@ import { Hero } from "@/components/sections/Hero";
 import { SoundLibrary } from "@/components/sections/SoundLibrary";
 import { CategoryRail } from "@/components/ui/CategoryRail";
 import { CreditMeter } from "@/components/ui/CreditMeter";
+import { SocialCreditBonus } from "@/components/ui/SocialCreditBonus";
 import { StatPill } from "@/components/ui/StatPill";
+import { SubmissionCallout } from "@/components/ui/SubmissionCallout";
 import { categories, type SoundAsset } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +55,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
       const downloadedMatch = libraryView === "all" || downloadedIds.includes(sound.id);
       const searchMatch =
         normalizedQuery.length === 0 ||
-        [sound.title, sound.key, sound.mood, sound.bpm?.toString() ?? "any bpm", sound.tags.join(" ")]
+        [sound.title, sound.mood, sound.bpm?.toString() ?? "any bpm", sound.tags.join(" ")]
           .join(" ")
           .toLowerCase()
           .includes(normalizedQuery);
@@ -72,10 +74,12 @@ export function HomeClient({ sounds }: HomeClientProps) {
             <StatPill icon={Disc3} label="Assets" value={`${sounds.length}`} tone="dark" />
             <StatPill icon={CheckCircle2} label="Saved" value={`${downloadedIds.length}`} tone="dark" />
             <StatPill icon={Sparkles} label="Fresh" value="Weekly" tone="coral" />
-            <StatPill icon={ArrowDownToLine} label="Daily cap" value="12 credits" tone="volt" />
+            <StatPill icon={ArrowDownToLine} label="Daily base" value="20 credits" tone="volt" />
           </div>
           <CreditMeter />
         </div>
+        <SocialCreditBonus />
+        <SubmissionCallout />
 
         <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
           <aside className="lg:sticky lg:top-5 lg:self-start">
@@ -111,7 +115,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search tempo, key, mood, tag..."
+                placeholder="Search tempo, mood, tag..."
                 className="h-full min-w-0 flex-1 bg-transparent font-display text-base outline-none placeholder:text-ink/45"
               />
             </label>

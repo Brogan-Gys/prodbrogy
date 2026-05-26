@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDownToLine, CheckCircle2, Pause, Play, X } from "lucide-react";
 import {
   CREDIT_STORAGE_KEY,
-  DAILY_CREDIT_LIMIT,
+  getDailyCreditTotal,
   getDefaultCreditState,
   normalizeCreditState,
   type CreditState
@@ -130,6 +130,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
   const timerRef = useRef<number | null>(null);
   const progressTimerRef = useRef<number | null>(null);
   const fadeTimerRef = useRef<number | null>(null);
+  const fadeStartedRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef("");
 
@@ -139,12 +140,11 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
     () =>
       [
         sound.bpm && sound.bpm > 0 ? `${sound.bpm} BPM` : "",
-        sound.key && sound.key.toLowerCase() !== "n/a" ? sound.key : "",
         sound.mood && sound.mood.toLowerCase() !== "untagged" ? sound.mood : ""
       ]
         .filter(Boolean)
         .join(" / "),
-    [sound.bpm, sound.key, sound.mood]
+    [sound.bpm, sound.mood]
   );
 
   const flashNotice = (message: string) => {
@@ -191,6 +191,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
     setIsPlaying(false);
     setPlayhead(0);
     setCurrentTime(0);
+    fadeStartedRef.current = false;
 
     if (message) {
       flashNotice(message);
@@ -207,7 +208,10 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
       setAudioDuration(Number.isFinite(audio.duration) ? audio.duration : null);
       setPlayhead(duration > 0 ? Math.min(1, elapsed / duration) : 0);
 
-      if (previewLimit && duration - elapsed <= 2 && !fadeTimerRef.current) {
+      const fadeSeconds = Math.min(2, duration);
+      const shouldFade = duration > 0 && duration - elapsed <= fadeSeconds;
+
+      if (shouldFade && !fadeStartedRef.current) {
         startFade(audio, Math.max(0.35, duration - elapsed));
       }
 
@@ -222,6 +226,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
     const startedAt = performance.now();
     const fadeMs = seconds * 1000;
 
+    fadeStartedRef.current = true;
     fadeTimerRef.current = window.setInterval(() => {
       const progress = Math.min(1, (performance.now() - startedAt) / fadeMs);
       audio.volume = Math.max(0, startVolume * (1 - progress));
@@ -278,6 +283,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
 
     audioRef.current.currentTime = 0;
     audioRef.current.volume = 1;
+    fadeStartedRef.current = false;
     audioRef.current
       .play()
       .then(() => {
@@ -301,8 +307,8 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
     const state = normalizeCreditState(stored ? (JSON.parse(stored) as CreditState) : getDefaultCreditState());
     const nextUsed = state.used + sound.credits;
 
-    if (nextUsed > DAILY_CREDIT_LIMIT) {
-      flashNotice("Daily credit limit reached");
+    if (nextUsed > getDailyCreditTotal(state)) {
+      flashNotice("Out of daily credits");
       return;
     }
 

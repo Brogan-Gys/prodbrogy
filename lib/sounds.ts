@@ -13,7 +13,6 @@ export type SoundAsset = {
   category: string;
   producerName: string;
   bpm: number | null;
-  key: string;
   mood: string;
   credits: number;
   duration: string;
@@ -26,7 +25,7 @@ export type SoundAsset = {
 export const categories: SoundCategory[] = [
   {
     id: "all",
-    label: "All sounds",
+    label: "All",
     description: "Browse every drop in the vault.",
     icon: Boxes
   },
@@ -50,14 +49,14 @@ export const categories: SoundCategory[] = [
   },
   {
     id: "oneshots",
-    label: "One shots",
+    label: "Shots",
     description: "Single hits for samplers and drum racks.",
     icon: Flame
   },
   {
     id: "starters",
     label: "Starters",
-    description: "Mini song seeds with tempo and key direction.",
+    description: "Mini song seeds with tempo direction.",
     icon: Boxes
   }
 ];

@@ -10,6 +10,7 @@ import {
   uploadFileToR2,
   uploadTrimmedPreviewToR2
 } from "@/lib/server/adminUpload";
+import { getCategoryCreditCost } from "@/lib/credits";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -26,7 +27,6 @@ type FinalizeUploadRequest = {
   category?: string;
   producerName?: string;
   bpm?: number | null;
-  key?: string;
   mood?: string;
   credits?: number | null;
   duration?: string;
@@ -127,9 +127,8 @@ async function finalizeDirectUpload(request: Request) {
     previewUrl,
     downloadUrl: cleanString(body.downloadKey),
     bpm: cleanNumber(body.bpm, null),
-    key: cleanString(body.key),
     mood: cleanString(body.mood),
-    credits: cleanNumber(body.credits, 1) ?? 1,
+    credits: getCategoryCreditCost(category),
     duration: cleanString(body.duration) || "0:00",
     tags: cleanTags(body.tags),
     accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt"
@@ -197,9 +196,8 @@ export async function POST(request: Request) {
       previewUrl,
       downloadUrl,
       bpm: getNumber(formData, "bpm", null),
-      key: getString(formData, "key"),
       mood: getString(formData, "mood"),
-      credits: getNumber(formData, "credits", 1) ?? 1,
+      credits: getCategoryCreditCost(category),
       duration: getString(formData, "duration") || "0:00",
       tags: getTags(getString(formData, "tags")),
       accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt"

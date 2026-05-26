@@ -7,6 +7,9 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 
 export function Hero() {
   const heroRef = useRef<HTMLElement>(null);
+  const highlightCredits = () => {
+    window.setTimeout(() => window.dispatchEvent(new Event("credits:highlight")), 450);
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -36,14 +39,16 @@ export function Hero() {
       className="relative mx-auto flex min-h-[86vh] w-full max-w-7xl flex-col justify-between overflow-hidden px-4 py-5 sm:px-6 lg:px-8"
     >
       <nav className="relative z-10 flex items-center justify-between border-2 border-ink bg-bone/85 px-3 py-3 backdrop-blur md:px-5">
-        <a href="#" className="font-display text-xl font-black uppercase tracking-normal">
-          ProdBrogy
-        </a>
-        <div className="hidden items-center gap-2 text-sm font-bold uppercase md:flex">
-          <span>MIDI</span>
-          <span>Loops</span>
-          <span>Drums</span>
-          <span>Starters</span>
+        <div className="flex items-center gap-2">
+          <a href="#" className="font-display text-xl font-black uppercase tracking-normal">
+            ProdBrogy
+          </a>
+          <span className="border-2 border-ink bg-coral px-2 py-1 font-display text-xs font-black uppercase">Beta</span>
+        </div>
+        <div className="hidden items-center gap-3 text-sm font-bold uppercase md:flex">
+          <span>Sound vault</span>
+          <span>Fresh drops</span>
+          <span>Daily credits</span>
         </div>
         <a
           href="#library"
@@ -56,9 +61,6 @@ export function Hero() {
 
       <div className="relative grid flex-1 items-center gap-8 py-10">
         <div className="relative z-10 max-w-4xl">
-          <p data-hero-item className="mb-4 inline-flex border-2 border-ink bg-coral px-3 py-2 font-display text-sm font-black uppercase">
-            Producer vault / curated sounds
-          </p>
           <h1
             data-hero-item
             className="max-w-5xl font-display text-7xl font-black uppercase leading-[0.78] tracking-normal sm:text-8xl md:text-[9rem] lg:text-[11rem]"
@@ -75,7 +77,7 @@ export function Hero() {
             <ButtonLink href="#library" icon={Play}>
               Browse library
             </ButtonLink>
-            <ButtonLink href="#credits" icon={Radio} variant="light">
+            <ButtonLink href="#credits" icon={Radio} variant="light" onClick={highlightCredits}>
               View credits
             </ButtonLink>
           </div>

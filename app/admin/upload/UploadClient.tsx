@@ -16,7 +16,6 @@ type AdminSound = {
   category: string;
   producerName: string;
   bpm: number | null;
-  key: string;
   mood: string;
   credits: number;
   duration: string;
@@ -202,7 +201,7 @@ export function UploadClient() {
         await uploadFileDirectly(downloadFile, uploadTargets.download.url, uploadTargets.download.contentType);
       }
 
-      setState({ status: "submitting", message: "Trimming preview and creating catalog entry..." });
+      setState({ status: "submitting", message: "Creating catalog entry..." });
       const finalizeResponse = await fetch("/api/admin/upload-sound", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -215,9 +214,7 @@ export function UploadClient() {
           category: getFormString(formData, "category"),
           producerName: getFormString(formData, "producerName"),
           bpm: getNumberValue(formData, "bpm"),
-          key: getFormString(formData, "key"),
           mood: getFormString(formData, "mood"),
-          credits: getNumberValue(formData, "credits"),
           duration: getFormString(formData, "duration"),
           tags: parseCsv(getFormString(formData, "tags")),
           accent: getFormString(formData, "accent")
@@ -256,9 +253,7 @@ export function UploadClient() {
       category: getFormString(formData, "category"),
       producerName: getFormString(formData, "producerName"),
       bpm: getFormNumber(formData, "bpm"),
-      key: getFormString(formData, "key"),
       mood: getFormString(formData, "mood"),
-      credits: getFormNumber(formData, "credits") ?? 1,
       duration: getFormString(formData, "duration"),
       tags: parseCsv(getFormString(formData, "tags")),
       accent: getFormString(formData, "accent"),
@@ -386,28 +381,20 @@ export function UploadClient() {
             </select>
           </Field>
 
-          <Field label="Preview audio - optional">
-            <input name="previewFile" type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.webm" className="file-input" />
+          <Field label="Download file">
+            <input name="downloadFile" type="file" accept=".zip,.rar,.7z,.mid,.midi,audio/*" required className="file-input" />
           </Field>
 
-          <Field label="Download file">
-            <input name="downloadFile" type="file" accept=".zip,.rar,.7z,.mid,.midi,audio/*" className="file-input" />
+          <Field label="Preview audio - optional">
+            <input name="previewFile" type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.webm" className="file-input" />
           </Field>
 
           <Field label="BPM">
             <input name="bpm" type="number" min="0" className="input" placeholder="140" />
           </Field>
 
-          <Field label="Key">
-            <input name="key" className="input" placeholder="F minor" />
-          </Field>
-
           <Field label="Mood">
             <input name="mood" className="input" placeholder="dark, glossy, bounce" />
-          </Field>
-
-          <Field label="Credits">
-            <input name="credits" type="number" min="1" max="12" required className="input" defaultValue="1" />
           </Field>
 
           <Field label="Duration">
@@ -471,12 +458,6 @@ export function UploadClient() {
                 </Field>
                 <Field label="BPM">
                   <input name="bpm" type="number" min="0" className="input" defaultValue={sound.bpm ?? ""} />
-                </Field>
-                <Field label="Credits">
-                  <input name="credits" type="number" min="1" max="12" className="input" defaultValue={sound.credits} />
-                </Field>
-                <Field label="Key">
-                  <input name="key" className="input" defaultValue={sound.key} />
                 </Field>
                 <Field label="Mood">
                   <input name="mood" className="input" defaultValue={sound.mood} />

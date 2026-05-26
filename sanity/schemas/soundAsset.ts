@@ -50,14 +50,13 @@ export const soundAsset = defineType({
       description: "Leave blank for starter sounds that can work at any tempo.",
       validation: positiveNumber
     }),
-    defineField({ name: "key", title: "Key", type: "string" }),
     defineField({ name: "mood", title: "Mood", type: "string" }),
     defineField({
       name: "credits",
       title: "Credits",
       type: "number",
       initialValue: 1,
-      validation: (Rule) => Rule.required().min(1).max(12)
+      validation: (Rule) => Rule.required().min(0.5).max(20)
     }),
     defineField({ name: "duration", title: "Duration", type: "string", initialValue: "0:00" }),
     defineField({

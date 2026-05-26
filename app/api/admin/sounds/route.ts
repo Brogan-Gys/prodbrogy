@@ -6,6 +6,7 @@ import {
   isAdminPasswordValid,
   isR2Configured
 } from "@/lib/server/adminUpload";
+import { getCategoryCreditCost } from "@/lib/credits";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,6 @@ const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   category,
   "producerName": coalesce(producerName, ""),
   bpm,
-  "key": coalesce(key, ""),
   "mood": coalesce(mood, ""),
   "credits": coalesce(credits, 1),
   "duration": coalesce(duration, "0:00"),
@@ -34,7 +34,6 @@ type UpdatePayload = {
   category?: string;
   producerName?: string;
   bpm?: number | null;
-  key?: string;
   mood?: string;
   credits?: number;
   duration?: string;
@@ -79,8 +78,13 @@ export async function POST(request: Request) {
       return jsonAuthInvalid();
     }
 
-    const sounds = await getSanityWriteClient().fetch(soundsQuery);
-    return NextResponse.json({ sounds });
+    const sounds = await getSanityWriteClient().fetch<UpdatePayload[]>(soundsQuery);
+    return NextResponse.json({
+      sounds: sounds.map((sound) => ({
+        ...sound,
+        credits: getCategoryCreditCost(sound.category ?? "", sound.credits ?? 1)
+      }))
+    });
   } catch (error) {
     return NextResponse.json({ error: `Could not load sounds: ${getErrorMessage(error)}` }, { status: 500 });
   }
@@ -110,9 +114,8 @@ export async function PATCH(request: Request) {
       category: cleanString(body.category),
       producerName: cleanString(body.producerName),
       bpm: typeof body.bpm === "number" && Number.isFinite(body.bpm) ? body.bpm : null,
-      key: cleanString(body.key),
       mood: cleanString(body.mood),
-      credits: typeof body.credits === "number" && Number.isFinite(body.credits) ? body.credits : 1,
+      credits: getCategoryCreditCost(cleanString(body.category)),
       duration: cleanString(body.duration) || "0:00",
       tags: cleanStringArray(body.tags),
       accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt",

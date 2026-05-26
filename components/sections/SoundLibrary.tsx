@@ -40,7 +40,7 @@ export function SoundLibrary({ sounds, downloadedIds = [], onDownloadRecorded }:
       ) : (
         <div className="border-2 border-ink bg-white p-8 text-center shadow-hard">
           <p className="font-display text-2xl font-black uppercase">No sounds found</p>
-          <p className="mt-2 font-semibold text-ink/60">Try another category, tempo, key, or tag.</p>
+          <p className="mt-2 font-semibold text-ink/60">Try another category, tempo, mood, or tag.</p>
         </div>
       )}
     </div>
