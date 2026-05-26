@@ -18,6 +18,11 @@ type SoundRowProps = {
   onDownloadRecorded?: (sound: SoundAsset) => void;
 };
 
+type ActivePreview = {
+  id: string;
+  stop: () => void;
+};
+
 const accentClass = {
   volt: "bg-volt",
   coral: "bg-coral",
@@ -27,6 +32,7 @@ const accentClass = {
 
 const audioFilePattern = /\.(mp3|wav|m4a|ogg|flac|webm)(\?|#|$)/i;
 const downloadableFilePattern = /\.(zip|rar|7z|mp3|wav|m4a|ogg|flac|webm|mid|midi)(\?|#|$)/i;
+let activePreview: ActivePreview | null = null;
 
 function getIframeSrc(value: string) {
   const match = value.match(/src=["']([^"']+)["']/i);
@@ -156,11 +162,14 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
     return () => {
       audioRef.current?.pause();
       clearPlaybackTimers();
+      if (activePreview?.id === sound.id) {
+        activePreview = null;
+      }
       if (timerRef.current) {
         window.clearTimeout(timerRef.current);
       }
     };
-  }, []);
+  }, [sound.id]);
 
   const clearPlaybackTimers = () => {
     if (progressTimerRef.current) {
@@ -193,6 +202,10 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
 
     if (message) {
       flashNotice(message);
+    }
+
+    if (activePreview?.id === sound.id) {
+      activePreview = null;
     }
   };
 
@@ -236,6 +249,26 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
     }, 50);
   };
 
+  const activatePreview = () => {
+    if (activePreview?.id !== sound.id) {
+      activePreview?.stop();
+    }
+
+    activePreview = {
+      id: sound.id,
+      stop: () => {
+        stopPlayback();
+        setEmbedUrl("");
+      }
+    };
+  };
+
+  const clearActivePreview = () => {
+    if (activePreview?.id === sound.id) {
+      activePreview = null;
+    }
+  };
+
   const handlePreview = () => {
     const previewSource = sound.previewUrl;
 
@@ -249,9 +282,14 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
     const megaEmbedUrl = getMegaEmbedUrl(previewSource);
 
     if (megaEmbedUrl) {
+      activatePreview();
       audioRef.current?.pause();
+      clearPlaybackTimers();
       setIsAudioLoading(false);
       setIsPlaying(false);
+      setPlayhead(0);
+      setCurrentTime(0);
+      fadeStartedRef.current = false;
       setEmbedUrl(megaEmbedUrl);
       flashNotice("Mega preview opened");
       return;
@@ -279,9 +317,11 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
 
     if (isPlaying) {
       stopPlayback("Preview paused");
+      clearActivePreview();
       return;
     }
 
+    activatePreview();
     setIsAudioLoading(true);
     audioRef.current.currentTime = 0;
     audioRef.current.volume = 1;
@@ -296,6 +336,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
       .catch(() => {
         setIsAudioLoading(false);
         setIsPlaying(false);
+        clearActivePreview();
         flashNotice("Preview unavailable");
       });
   };
@@ -426,7 +467,10 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
               <p className="min-w-0 truncate font-display text-xl font-black uppercase">{sound.title}</p>
               <button
                 type="button"
-                onClick={() => setEmbedUrl("")}
+                onClick={() => {
+                  setEmbedUrl("");
+                  clearActivePreview();
+                }}
                 className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-ink bg-bone"
                 aria-label="Close preview"
               >
