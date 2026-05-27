@@ -1,4 +1,4 @@
-const fallbackUrl = "https://prodbrogy.com";
+const fallbackUrl = "https://prodbrogysoundsupply.com";
 
 function getSiteUrl() {
   const explicitUrl = process.env.NEXT_PUBLIC_SITE_URL;

@@ -27,31 +27,18 @@
 html {
   color-scheme: only light;
   scroll-behavior: smooth;
-  scrollbar-color: #11110f #ffffff;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
 
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 0;
+  height: 0;
+  display: none;
 }
 
-html::-webkit-scrollbar-track,
-body::-webkit-scrollbar-track {
-  background: #ffffff;
-  border-left: 2px solid #11110f;
-}
-
-html::-webkit-scrollbar-thumb,
-body::-webkit-scrollbar-thumb {
-  background: #11110f;
-  border: 2px solid #ffffff;
-}
-
-html::-webkit-scrollbar-thumb:hover,
-body::-webkit-scrollbar-thumb:hover {
-  background: #3a342c;
+body {
+  -ms-overflow-style: none;
 }
 
 body {
