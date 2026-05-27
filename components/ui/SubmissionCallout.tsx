@@ -6,15 +6,17 @@ import { MessageCircle, Send, X } from "lucide-react";
 export function SubmissionCallout() {
   const [isOpen, setIsOpen] = useState(false);
   const [isNearFiles, setIsNearFiles] = useState(false);
+  const [isFooterVisible, setIsFooterVisible] = useState(false);
 
   useEffect(() => {
     const filesSection = document.getElementById("sound-files");
+    const footer = document.getElementById("site-footer");
 
-    if (!filesSection) {
+    if (!filesSection && !footer) {
       return;
     }
 
-    const observer = new IntersectionObserver(
+    const filesObserver = new IntersectionObserver(
       ([entry]) => {
         setIsNearFiles(entry.isIntersecting);
 
@@ -28,15 +30,40 @@ export function SubmissionCallout() {
       }
     );
 
-    observer.observe(filesSection);
+    const footerObserver = new IntersectionObserver(
+      ([entry]) => {
+        setIsFooterVisible(entry.isIntersecting);
 
-    return () => observer.disconnect();
+        if (entry.isIntersecting) {
+          setIsOpen(false);
+        }
+      },
+      {
+        rootMargin: "0px 0px -8% 0px",
+        threshold: 0.01
+      }
+    );
+
+    if (filesSection) {
+      filesObserver.observe(filesSection);
+    }
+
+    if (footer) {
+      footerObserver.observe(footer);
+    }
+
+    return () => {
+      filesObserver.disconnect();
+      footerObserver.disconnect();
+    };
   }, []);
+
+  const isVisible = isNearFiles && !isFooterVisible;
 
   return (
     <aside
       className={`fixed bottom-4 right-3 z-40 transition duration-300 sm:bottom-6 sm:right-6 ${
-        isNearFiles ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
+        isVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
     >
       {isOpen ? (

@@ -81,10 +81,12 @@ export function Hero({ soundCount = 0 }: HeroProps) {
           </a>
           <span className="border-2 border-ink bg-coral px-2 py-1 font-display text-xs font-black uppercase">Beta</span>
         </div>
+        {/*
         <p className="hidden text-xs font-black uppercase text-ink/55 md:block">
           {remainingCredits} {remainingCredits === 1 ? "credit" : "credits"} left / {soundCount}{" "}
           {soundCount === 1 ? "sound" : "sounds"} live
         </p>
+        */}
         <a
           href="#library"
           className="inline-flex h-10 w-10 items-center justify-center border-2 border-ink bg-volt text-ink transition hover:-translate-y-0.5"
