@@ -64,7 +64,7 @@ export function CreditMeter() {
       id="credits"
       className={cn(
         "min-w-[280px] border-2 border-ink bg-white p-3 shadow-hard transition-[background-color,box-shadow,transform] duration-300",
-        isHighlighted && "bg-volt shadow-[8px_8px_0_#11110f] -translate-y-1"
+        isHighlighted && "bg-cyan shadow-[8px_8px_0_#11110f] -translate-y-1"
       )}
     >
       <div className="flex items-center justify-between gap-3">

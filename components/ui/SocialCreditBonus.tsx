@@ -52,30 +52,28 @@ export function SocialCreditBonus() {
   }
 
   return (
-    <section className="grid gap-3 border-2 border-ink bg-white p-3 shadow-hard">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="font-display text-sm font-black uppercase">Social bonus credits</p>
-          <p className="text-xs font-bold uppercase text-ink/55">Follow, then confirm to claim +{SOCIAL_CREDIT_BONUS} today</p>
-        </div>
+    <section className="border-2 border-ink bg-white p-2 shadow-hard">
+      <div className="flex flex-wrap items-center gap-2 border-b-2 border-ink pb-2">
+        <p className="font-display text-xs font-black uppercase">Social bonus credits</p>
+        <p className="text-[11px] font-bold uppercase text-ink/55">Claim +{SOCIAL_CREDIT_BONUS} today</p>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="mt-2 grid gap-2 lg:grid-cols-3">
         {socialBonusLinks.map(({ id, label, href, Icon, tone }) => {
           const isClaimed = claimedSocials.has(id);
           const isVisited = visitedSocialSet.has(id);
 
           return (
-            <div key={id} className="grid gap-2 border-2 border-ink bg-bone p-2">
+            <div key={id} className="grid grid-cols-[1fr_auto] items-center gap-2 border-2 border-ink bg-bone p-1.5">
               <a
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setVisitedSocials((current) => (current.includes(id) ? current : [...current, id]))}
-                className="flex min-h-10 items-center justify-between gap-2 px-1 font-display text-xs font-black uppercase transition hover:-translate-y-0.5"
+                className="flex min-h-9 min-w-0 items-center justify-between gap-2 px-1 font-display text-xs font-black uppercase transition hover:-translate-y-0.5"
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center border-2 border-ink ${tone}`}>
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center border-2 border-ink ${tone}`}>
                     <Icon className="h-4 w-4" aria-hidden />
                   </span>
                   <span className="truncate">{label}</span>
@@ -87,7 +85,7 @@ export function SocialCreditBonus() {
                 type="button"
                 onClick={() => claimBonus(id)}
                 disabled={!isVisited || isClaimed}
-                className="inline-flex h-9 items-center justify-center gap-2 border-2 border-ink bg-white px-2 font-display text-[11px] font-black uppercase transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
+                className="inline-flex h-9 min-w-24 items-center justify-center gap-1.5 border-2 border-ink bg-white px-2 font-display text-[10px] font-black uppercase transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
               >
                 {isClaimed ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : null}
                 {isClaimed ? "Claimed" : isVisited ? "I followed" : "Open first"}

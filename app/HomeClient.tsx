@@ -177,8 +177,8 @@ export function HomeClient({ sounds }: HomeClientProps) {
         <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
           <div className="flex flex-wrap gap-2">
             <StatPill icon={Disc3} label="Assets" value={`${liveSounds.length}`} tone="dark" />
-            <StatPill icon={CheckCircle2} label="Saved" value={`${downloadedIds.length}`} tone="dark" />
-            <StatPill icon={Heart} label="Stash" value={`${favoriteIds.length}`} tone="coral" />
+            <StatPill icon={CheckCircle2} label="Saved" value={`${downloadedIds.length}`} tone="saved" />
+            <StatPill icon={Heart} label="Stash" value={`${favoriteIds.length}`} tone="stash" />
             <StatPill icon={Sparkles} label="Fresh" value="Weekly" tone="coral" />
             <StatPill icon={ArrowDownToLine} label="Daily base" value="12 credits" tone="volt" />
           </div>
@@ -187,7 +187,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
         <SocialCreditBonus />
         <SubmissionCallout />
 
-        <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
+        <div id="sound-files" className="grid gap-3 lg:grid-cols-[280px_1fr]">
           <aside className="hidden lg:sticky lg:top-5 lg:block lg:self-start">
             <CategoryRail categories={categories} activeCategory={activeCategory} onSelectCategory={setActiveCategory} />
           </aside>

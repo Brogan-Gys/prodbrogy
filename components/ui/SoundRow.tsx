@@ -100,8 +100,21 @@ function getPreviewLimit(category: string) {
   return 20;
 }
 
-function getPlayableDuration(duration: number, previewLimit: number | null) {
-  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : previewLimit ?? 0;
+function parseDurationSeconds(value: string) {
+  const parts = value
+    .split(":")
+    .map((part) => Number.parseInt(part, 10))
+    .filter((part) => Number.isFinite(part));
+
+  if (parts.length === 0) {
+    return 0;
+  }
+
+  return parts.reduce((total, part) => total * 60 + part, 0);
+}
+
+function getPlayableDuration(duration: number, previewLimit: number | null, fallbackDuration = 0) {
+  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : fallbackDuration || previewLimit || 0;
 
   if (!previewLimit) {
     return safeDuration;
@@ -119,11 +132,13 @@ function formatTime(seconds: number) {
 }
 
 function getTimeLabel(currentTime: number, duration: number | null, previewLimit: number | null, fallbackDuration: string) {
+  const fallbackSeconds = parseDurationSeconds(fallbackDuration);
+
   if (currentTime <= 0) {
-    return previewLimit ? formatTime(previewLimit) : fallbackDuration;
+    return previewLimit ? formatTime(getPlayableDuration(0, previewLimit, fallbackSeconds)) : fallbackDuration;
   }
 
-  const playableDuration = getPlayableDuration(duration ?? 0, previewLimit);
+  const playableDuration = getPlayableDuration(duration ?? 0, previewLimit, fallbackSeconds);
   return `${formatTime(currentTime)} / ${formatTime(playableDuration)}`;
 }
 
@@ -164,6 +179,7 @@ export function SoundRow({
   const audioUrlRef = useRef("");
 
   const previewLimit = useMemo(() => getPreviewLimit(sound.category), [sound.category]);
+  const fallbackPreviewDuration = useMemo(() => parseDurationSeconds(sound.duration), [sound.duration]);
   const isNew = useMemo(() => isRecentlyAdded(sound.createdAt), [sound.createdAt]);
 
   const meta = useMemo(
@@ -239,7 +255,7 @@ export function SoundRow({
   const startProgressTracking = (audio: HTMLAudioElement) => {
     clearPlaybackTimers();
     progressTimerRef.current = window.setInterval(() => {
-      const duration = getPlayableDuration(audio.duration, previewLimit);
+      const duration = getPlayableDuration(audio.duration, previewLimit, fallbackPreviewDuration);
       const elapsed = Math.min(audio.currentTime, duration);
 
       setCurrentTime(elapsed);
@@ -446,9 +462,11 @@ export function SoundRow({
             <div className="flex flex-wrap items-start justify-between gap-1.5 lg:gap-2">
               <div className="min-w-0">
                 <p className="truncate font-display text-base font-black uppercase leading-tight lg:text-xl">{sound.title}</p>
+                {/*
                 {sound.producerName ? (
                   <p className="mt-0.5 truncate text-[10px] font-black uppercase text-ink/70 lg:mt-1 lg:text-xs">Collab with {sound.producerName}</p>
                 ) : null}
+                */}
                 {meta ? <p className="mt-0.5 truncate text-[10px] font-bold uppercase text-ink/55 lg:mt-1 lg:text-xs">{meta}</p> : null}
               </div>
               <div className="flex flex-wrap justify-end gap-1 lg:gap-2">
