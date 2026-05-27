@@ -18,12 +18,12 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={label}
-              className="inline-flex h-9 w-9 items-center justify-center gap-2 border-2 border-ink bg-white font-display text-xs font-black uppercase shadow-hard transition hover:-translate-y-0.5 sm:h-10 sm:w-auto sm:px-3"
+              className="inline-flex h-9 items-center justify-center gap-2 border-2 border-ink bg-white px-2 font-display text-[10px] font-black uppercase shadow-hard transition hover:-translate-y-0.5 sm:h-10 sm:px-3 sm:text-xs"
             >
-              <span className={`flex h-6 w-6 items-center justify-center border-2 border-ink ${tone}`}>
+              <span className={`hidden h-6 w-6 items-center justify-center border-2 border-ink sm:flex ${tone}`}>
                 <Icon className="h-3.5 w-3.5" aria-hidden />
               </span>
-              <span className="hidden sm:inline">{label}</span>
+              <span>{label}</span>
               <ExternalLink className="hidden h-3.5 w-3.5 sm:block" aria-hidden />
             </a>
           ))}

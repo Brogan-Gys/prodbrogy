@@ -487,7 +487,7 @@ export function SoundRow({
                   </span>
                 ) : null}
                 <span
-                  className={cn("border-2 border-ink px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]", accentClass[sound.accent])}
+                  className="border-2 border-ink bg-bone px-1.5 py-0.5 font-display text-[9px] font-black uppercase text-ink lg:px-2 lg:text-[11px]"
                   title={getCreditLabel(sound.credits)}
                 >
                   {getCreditLabel(sound.credits)}

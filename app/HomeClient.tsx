@@ -184,7 +184,9 @@ export function HomeClient({ sounds }: HomeClientProps) {
           </div>
           <CreditMeter />
         </div>
+        {/*
         <SocialCreditBonus />
+        */}
         <SubmissionCallout />
 
         <div id="sound-files" className="grid gap-3 lg:grid-cols-[280px_1fr]">
@@ -194,17 +196,17 @@ export function HomeClient({ sounds }: HomeClientProps) {
 
           <div className="space-y-3">
             <div
-              className={`grid gap-2 border-2 border-ink bg-white p-2 shadow-hard ${
+              className={`grid grid-cols-3 gap-1.5 border-2 border-ink bg-white p-1.5 shadow-[4px_4px_0_#11110f] ${
                 hasActiveFilters ? "lg:grid-cols-[1fr_170px_170px_auto_auto]" : "lg:grid-cols-[1fr_170px_170px_auto]"
               }`}
             >
-              <label className="flex h-12 items-center gap-3 border-2 border-ink bg-bone px-3">
-                <Search className="h-5 w-5 shrink-0" aria-hidden />
+              <label className="col-span-3 hidden h-10 items-center gap-2 border-2 border-ink bg-bone px-2.5 lg:col-span-1 lg:flex">
+                <Search className="h-4 w-4 shrink-0" aria-hidden />
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search sounds..."
-                  className="h-full min-w-0 flex-1 bg-transparent font-display text-sm outline-none placeholder:text-ink/45"
+                  className="h-full min-w-0 flex-1 bg-transparent font-display text-xs font-black uppercase outline-none placeholder:text-ink/40"
                 />
               </label>
 
@@ -212,7 +214,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
                 <select
                   value={activeCategory}
                   onChange={(event) => setActiveCategory(event.target.value)}
-                  className="h-12 w-full appearance-none border-2 border-ink bg-bone py-0 pl-3 pr-10 font-display text-xs font-black uppercase outline-none"
+                  className="h-10 w-full appearance-none border-2 border-ink bg-bone py-0 pl-2 pr-7 font-display text-[10px] font-black uppercase outline-none"
                   aria-label="Filter category"
                 >
                   {categories.map((category) => (
@@ -221,48 +223,48 @@ export function HomeClient({ sounds }: HomeClientProps) {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" aria-hidden />
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2" aria-hidden />
               </div>
 
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={libraryView}
                   onChange={(event) => setLibraryView(event.target.value as LibraryView)}
-                  className="h-12 w-full appearance-none border-2 border-ink bg-bone py-0 pl-3 pr-10 font-display text-xs font-black uppercase outline-none"
+                  className="h-10 w-full appearance-none border-2 border-ink bg-bone py-0 pl-2 pr-7 font-display text-[10px] font-black uppercase outline-none"
                   aria-label="Filter downloads"
                 >
                   <option value="all">All sounds</option>
                   <option value="downloaded">Download history</option>
                   <option value="favorites">Your stash</option>
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" aria-hidden />
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2" aria-hidden />
               </div>
 
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={sortMode}
                   onChange={(event) => setSortMode(event.target.value as SortMode)}
-                  className="h-12 w-full appearance-none border-2 border-ink bg-bone py-0 pl-3 pr-10 font-display text-xs font-black uppercase outline-none"
+                  className="h-10 w-full appearance-none border-2 border-ink bg-bone py-0 pl-2 pr-7 font-display text-[10px] font-black uppercase outline-none"
                   aria-label="Sort sounds"
                 >
                   <option value="fresh">Newest</option>
                   <option value="title">A-Z</option>
                   <option value="bpm">BPM</option>
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" aria-hidden />
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2" aria-hidden />
               </div>
 
               {hasActiveFilters ? (
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="h-12 border-2 border-ink bg-white px-3 font-display text-xs font-black uppercase text-ink transition hover:bg-bone"
+                  className="col-span-3 h-10 border-2 border-ink bg-white px-2.5 font-display text-[11px] font-black uppercase text-ink transition hover:bg-bone lg:col-span-1"
                 >
                   Clear filters
                 </button>
               ) : null}
 
-              <div className="flex h-12 items-center justify-center px-2 text-xs font-black uppercase text-ink/55">
+              <div className="col-span-3 hidden h-8 items-center justify-center px-2 text-[11px] font-black uppercase text-ink/55 lg:col-span-1 lg:flex lg:h-10">
                 {filteredSounds.length} {filteredSounds.length === 1 ? "sound" : "sounds"}
               </div>
             </div>

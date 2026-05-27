@@ -62,13 +62,13 @@ export function SubmissionCallout() {
 
   return (
     <aside
-      className={`fixed bottom-6 right-6 z-40 hidden transition duration-300 lg:block ${
+      className={`fixed bottom-6 left-6 z-40 hidden transition duration-300 lg:block ${
         isVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
     >
       {isOpen ? (
         <div className="relative w-[min(calc(100vw-24px),340px)] border-2 border-ink bg-ink p-3 text-bone shadow-[6px_6px_0_#ffffff]">
-          <span className="absolute -right-2 bottom-7 h-4 w-4 rotate-45 border-r-2 border-t-2 border-ink bg-ink" aria-hidden />
+          <span className="absolute -left-2 bottom-7 h-4 w-4 rotate-45 border-b-2 border-l-2 border-ink bg-ink" aria-hidden />
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-display text-xs font-black uppercase text-bone/65">Made something?</p>
