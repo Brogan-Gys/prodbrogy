@@ -26,7 +26,7 @@ export const socialLinks: SocialLink[] = [
   {
     id: "beatstars",
     label: "BeatStars",
-    href: "https://beatstars.com/prodbrogy",
+    href: "https://www.beatstars.com/prodbrogyqa9",
     Icon: Star,
     tone: "bg-cyan"
   },

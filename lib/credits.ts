@@ -23,6 +23,23 @@ export function getTodayKey() {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
+export function getCreditResetCountdown(now = new Date()) {
+  const resetAt = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const totalMinutes = Math.max(0, Math.ceil((resetAt.getTime() - now.getTime()) / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours <= 0 && minutes <= 0) {
+    return "Resets now";
+  }
+
+  if (hours <= 0) {
+    return `Resets in ${minutes}m`;
+  }
+
+  return `Resets in ${hours}h ${minutes}m`;
+}
+
 export function getDefaultCreditState(): CreditState {
   return {
     date: getTodayKey(),

@@ -6,7 +6,7 @@ type ButtonLinkProps = {
   children: React.ReactNode;
   icon: LucideIcon;
   variant?: "dark" | "light";
-  onClick?: () => void;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 };
 
 export function ButtonLink({ href, children, icon: Icon, variant = "dark", onClick }: ButtonLinkProps) {

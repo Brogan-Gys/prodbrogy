@@ -15,6 +15,7 @@ const fetchOptions =
 
 const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   "id": _id,
+  "createdAt": _createdAt,
   title,
   category,
   "producerName": coalesce(producerName, ""),

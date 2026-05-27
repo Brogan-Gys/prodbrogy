@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, CheckCircle2, Loader2, Pause, Play, X } from "lucide-react";
+import { ArrowDownToLine, CheckCircle2, Heart, Loader2, Pause, Play, X } from "lucide-react";
 import {
   CREDIT_STORAGE_KEY,
   getDailyCreditTotal,
@@ -10,12 +10,15 @@ import {
   type CreditState
 } from "@/lib/credits";
 import { cn } from "@/lib/utils";
-import type { SoundAsset } from "@/lib/sounds";
+import { categories, type SoundAsset } from "@/lib/sounds";
 
 type SoundRowProps = {
   sound: SoundAsset;
+  showCategoryIndicator?: boolean;
   isDownloaded?: boolean;
+  isFavorited?: boolean;
   onDownloadRecorded?: (sound: SoundAsset) => void;
+  onFavoriteToggle?: (sound: SoundAsset) => void;
 };
 
 type ActivePreview = {
@@ -33,6 +36,8 @@ const accentClass = {
 const audioFilePattern = /\.(mp3|wav|m4a|ogg|flac|webm)(\?|#|$)/i;
 const downloadableFilePattern = /\.(zip|rar|7z|mp3|wav|m4a|ogg|flac|webm|mid|midi)(\?|#|$)/i;
 let activePreview: ActivePreview | null = null;
+const categoryLabels = new Map(categories.map((category) => [category.id, category.label]));
+const newSoundWindowMs = 1000 * 60 * 60 * 24 * 2;
 
 function getIframeSrc(value: string) {
   const match = value.match(/src=["']([^"']+)["']/i);
@@ -115,14 +120,35 @@ function formatTime(seconds: number) {
 
 function getTimeLabel(currentTime: number, duration: number | null, previewLimit: number | null, fallbackDuration: string) {
   if (currentTime <= 0) {
-    return previewLimit ? `${formatTime(previewLimit)} preview` : fallbackDuration;
+    return previewLimit ? formatTime(previewLimit) : fallbackDuration;
   }
 
   const playableDuration = getPlayableDuration(duration ?? 0, previewLimit);
   return `${formatTime(currentTime)} / ${formatTime(playableDuration)}`;
 }
 
-export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: SoundRowProps) {
+function isRecentlyAdded(createdAt?: string) {
+  if (!createdAt) {
+    return false;
+  }
+
+  const createdTime = new Date(createdAt).getTime();
+
+  return Number.isFinite(createdTime) && Date.now() - createdTime <= newSoundWindowMs;
+}
+
+function getCreditLabel(credits: number) {
+  return `Costs ${credits} ${credits === 1 ? "credit" : "credits"}`;
+}
+
+export function SoundRow({
+  sound,
+  showCategoryIndicator = false,
+  isDownloaded = false,
+  isFavorited = false,
+  onDownloadRecorded,
+  onFavoriteToggle
+}: SoundRowProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [embedUrl, setEmbedUrl] = useState("");
@@ -138,6 +164,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
   const audioUrlRef = useRef("");
 
   const previewLimit = useMemo(() => getPreviewLimit(sound.category), [sound.category]);
+  const isNew = useMemo(() => isRecentlyAdded(sound.createdAt), [sound.createdAt]);
 
   const meta = useMemo(
     () =>
@@ -227,7 +254,7 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
       }
 
       if (previewLimit && elapsed >= duration) {
-        stopPlayback("Preview complete");
+        stopPlayback();
       }
     }, 120);
   };
@@ -310,13 +337,13 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
       audio.addEventListener("loadedmetadata", () => {
         setAudioDuration(Number.isFinite(audio.duration) ? audio.duration : null);
       });
-      audio.addEventListener("ended", () => stopPlayback("Preview complete"));
+      audio.addEventListener("ended", () => stopPlayback());
       audioRef.current = audio;
       audioUrlRef.current = audioUrl;
     }
 
     if (isPlaying) {
-      stopPlayback("Preview paused");
+      stopPlayback();
       clearActivePreview();
       return;
     }
@@ -347,22 +374,35 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
       return;
     }
 
-    const stored = window.localStorage.getItem(CREDIT_STORAGE_KEY);
-    const state = normalizeCreditState(stored ? (JSON.parse(stored) as CreditState) : getDefaultCreditState());
-    const nextUsed = state.used + sound.credits;
+    let nextUsed = 0;
+    let state = getDefaultCreditState();
 
-    if (nextUsed > getDailyCreditTotal(state)) {
-      flashNotice("Out of daily credits");
-      return;
+    if (!isDownloaded) {
+      try {
+        const stored = window.localStorage.getItem(CREDIT_STORAGE_KEY);
+        state = normalizeCreditState(stored ? (JSON.parse(stored) as CreditState) : getDefaultCreditState());
+      } catch {
+        state = getDefaultCreditState();
+      }
+
+      nextUsed = state.used + sound.credits;
+
+      if (nextUsed > getDailyCreditTotal(state)) {
+        flashNotice("Out of daily credits");
+        return;
+      }
+
+      window.localStorage.setItem(CREDIT_STORAGE_KEY, JSON.stringify({ ...state, used: nextUsed }));
+      window.dispatchEvent(new Event("credits:changed"));
     }
 
-    window.localStorage.setItem(CREDIT_STORAGE_KEY, JSON.stringify({ ...state, used: nextUsed }));
-    window.dispatchEvent(new Event("credits:changed"));
     onDownloadRecorded?.(sound);
     const downloadUrl = getIframeSrc(sound.downloadUrl).trim();
     const isDirectFile = downloadableFilePattern.test(downloadUrl);
 
-    flashNotice(isDirectFile ? "Download starting" : `Reserved ${sound.credits} credit${sound.credits === 1 ? "" : "s"}`);
+    flashNotice(
+      isDirectFile || isDownloaded ? "Download starting" : `Reserved ${sound.credits} credit${sound.credits === 1 ? "" : "s"}`
+    );
 
     const link = document.createElement("a");
     link.href = isDirectFile ? getSiteDownloadUrl(downloadUrl, sound) : downloadUrl;
@@ -382,50 +422,63 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
 
   return (
     <>
-      <article data-sound-row className="grid gap-3 border-2 border-ink bg-white p-3 shadow-hard lg:grid-cols-[1fr_260px]">
-        <div className="grid gap-3 md:grid-cols-[56px_1fr]">
+      <article data-sound-row className="grid gap-2 border-2 border-ink bg-white p-2 shadow-[4px_4px_0_#11110f] lg:grid-cols-[1fr_220px]">
+        <div className="grid gap-2 md:grid-cols-[48px_1fr]">
           <button
             type="button"
             onClick={handlePreview}
             className={cn(
-              "flex h-14 w-14 items-center justify-center border-2 border-ink transition hover:-translate-y-0.5",
+              "flex h-12 w-12 items-center justify-center border-2 border-ink transition hover:-translate-y-0.5",
               accentClass[sound.accent]
             )} 
             aria-label={`${isAudioLoading ? "Loading" : isPlaying ? "Pause" : "Play"} ${sound.title}`}
           >
             {isAudioLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
             ) : isPlaying ? (
-              <Pause className="h-6 w-6" />
+              <Pause className="h-5 w-5" />
             ) : (
-              <Play className="h-6 w-6 fill-current" />
+              <Play className="h-5 w-5 fill-current" />
             )}
           </button>
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="font-display text-2xl font-black uppercase leading-none">{sound.title}</p>
+                <p className="font-display text-xl font-black uppercase leading-tight">{sound.title}</p>
                 {sound.producerName ? (
                   <p className="mt-1 text-xs font-black uppercase text-ink/70">Collab with {sound.producerName}</p>
                 ) : null}
-                {meta ? <p className="mt-1 text-sm font-bold uppercase text-ink/55">{meta}</p> : null}
+                {meta ? <p className="mt-1 text-xs font-bold uppercase text-ink/55">{meta}</p> : null}
               </div>
               <div className="flex flex-wrap justify-end gap-2">
+                {isNew ? (
+                  <span className="inline-flex items-center border-2 border-ink bg-volt px-2 py-0.5 font-display text-[11px] font-black uppercase">
+                    New
+                  </span>
+                ) : null}
+                {showCategoryIndicator ? (
+                  <span className="inline-flex items-center border-2 border-ink bg-bone px-2 py-0.5 font-display text-[11px] font-black uppercase">
+                    {categoryLabels.get(sound.category) ?? sound.category}
+                  </span>
+                ) : null}
                 {isDownloaded ? (
-                  <span className="inline-flex items-center gap-1 border-2 border-ink bg-cyan px-2 py-1 font-display text-xs font-black uppercase">
+                  <span className="inline-flex items-center gap-1 border-2 border-ink bg-cyan px-2 py-0.5 font-display text-[11px] font-black uppercase">
                     <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                     Downloaded
                   </span>
                 ) : null}
-                <span className={cn("border-2 border-ink px-2 py-1 font-display text-xs font-black uppercase", accentClass[sound.accent])}>
-                  {sound.credits} cr
+                <span
+                  className={cn("border-2 border-ink px-2 py-0.5 font-display text-[11px] font-black uppercase", accentClass[sound.accent])}
+                  title={getCreditLabel(sound.credits)}
+                >
+                  {getCreditLabel(sound.credits)}
                 </span>
               </div>
             </div>
 
-            <div className="mt-4 border-2 border-ink bg-bone p-2">
-              <div className="h-3 overflow-hidden border-2 border-ink bg-white">
+            <div className="mt-3 border-2 border-ink bg-bone p-1.5">
+              <div className="h-2 overflow-hidden border-2 border-ink bg-white">
                 <span
                   className={cn("block h-full transition-[width]", isPlaying ? accentClass[sound.accent] : "bg-ink/55")}
                   style={{ width: `${playhead * 100}%` }}
@@ -436,24 +489,36 @@ export function SoundRow({ sound, isDownloaded = false, onDownloadRecorded }: So
           </div>
         </div>
 
-        <div className="flex flex-col justify-between gap-3 border-t-2 border-ink pt-3 lg:border-l-2 lg:border-t-0 lg:pl-3 lg:pt-0">
+        <div className="flex min-w-0 flex-col justify-between gap-2 border-t-2 border-ink pt-2 lg:border-l-2 lg:border-t-0 lg:pl-2 lg:pt-0">
           <div className="flex flex-wrap gap-2">
             {sound.tags.map((tag) => (
-              <span key={tag} className="border border-ink/20 bg-bone px-2 py-1 text-xs font-bold uppercase text-ink/65">
+              <span key={tag} className="border border-ink/20 bg-bone px-2 py-0.5 text-[11px] font-bold uppercase text-ink/65">
                 {tag}
               </span>
             ))}
           </div>
-          <div className="flex items-center justify-between gap-2">
-            <p className="min-h-5 text-xs font-bold uppercase text-ink/55">
-              {notice || (isAudioLoading ? "Loading preview" : getTimeLabel(currentTime, audioDuration, previewLimit, sound.duration))}
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <p className="min-h-5 min-w-0 flex-1 truncate text-xs font-bold uppercase text-ink/55">
+              {notice || getTimeLabel(currentTime, audioDuration, previewLimit, sound.duration)}
             </p>
             <button
               type="button"
-              onClick={handleDownload}
-              className="inline-flex h-11 items-center gap-2 border-2 border-ink bg-ink px-3 font-display text-xs font-black uppercase text-bone transition hover:-translate-y-0.5"
+              onClick={() => onFavoriteToggle?.(sound)}
+              className={cn(
+                "inline-flex h-9 w-9 shrink-0 items-center justify-center border-2 border-ink transition hover:-translate-y-0.5",
+                isFavorited ? "bg-coral text-ink" : "bg-white text-ink"
+              )}
+              aria-label={`${isFavorited ? "Remove from" : "Add to"} stash: ${sound.title}`}
+              title={isFavorited ? "Remove from stash" : "Add to stash"}
             >
-              <ArrowDownToLine className="h-4 w-4" aria-hidden />
+              <Heart className={cn("h-4 w-4", isFavorited && "fill-current")} aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 border-2 border-ink bg-ink px-2.5 font-display text-[11px] font-black uppercase text-bone transition hover:-translate-y-0.5"
+            >
+              <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden />
               Download
             </button>
           </div>

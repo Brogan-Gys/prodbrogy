@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, CheckCircle2, Disc3, Search, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ArrowDownToLine, CheckCircle2, ChevronDown, Disc3, Heart, Search, Sparkles } from "lucide-react";
 import { Hero } from "@/components/sections/Hero";
 import { SoundLibrary } from "@/components/sections/SoundLibrary";
 import { CategoryRail } from "@/components/ui/CategoryRail";
@@ -17,15 +17,16 @@ type HomeClientProps = {
 };
 
 const DOWNLOAD_HISTORY_KEY = "prodbrogy-download-history";
+const FAVORITE_SOUNDS_KEY = "prodbrogy-favorite-sounds";
 
-type LibraryView = "all" | "downloaded";
+type LibraryView = "all" | "downloaded" | "favorites";
 type SortMode = "fresh" | "title" | "bpm";
 const LIVE_UPDATE_INTERVAL_MS = 30000;
 const SKELETON_SWAP_DELAY_MS = 500;
 
-function readDownloadHistory() {
+function readStoredIds(key: string) {
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(DOWNLOAD_HISTORY_KEY) || "[]") as string[];
+    const parsed = JSON.parse(window.localStorage.getItem(key) || "[]") as string[];
     return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : [];
   } catch {
     return [];
@@ -41,9 +42,11 @@ export function HomeClient({ sounds }: HomeClientProps) {
   const [libraryView, setLibraryView] = useState<LibraryView>("all");
   const [sortMode, setSortMode] = useState<SortMode>("fresh");
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
 
   useEffect(() => {
-    setDownloadedIds(readDownloadHistory());
+    setDownloadedIds(readStoredIds(DOWNLOAD_HISTORY_KEY));
+    setFavoriteIds(readStoredIds(FAVORITE_SOUNDS_KEY));
   }, []);
 
   useEffect(() => {
@@ -119,13 +122,30 @@ export function HomeClient({ sounds }: HomeClientProps) {
       return next;
     });
   };
+  const toggleFavorite = (sound: SoundAsset) => {
+    setFavoriteIds((current) => {
+      const next = current.includes(sound.id) ? current.filter((id) => id !== sound.id) : [...current, sound.id];
+      window.localStorage.setItem(FAVORITE_SOUNDS_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+  const hasActiveFilters = activeCategory !== "all" || libraryView !== "all" || query.trim().length > 0 || sortMode !== "fresh";
+  const clearFilters = () => {
+    setActiveCategory("all");
+    setLibraryView("all");
+    setQuery("");
+    setSortMode("fresh");
+  };
 
   const filteredSounds = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     const nextSounds = liveSounds.filter((sound) => {
       const categoryMatch = activeCategory === "all" || sound.category === activeCategory;
-      const downloadedMatch = libraryView === "all" || downloadedIds.includes(sound.id);
+      const libraryMatch =
+        libraryView === "all" ||
+        (libraryView === "downloaded" && downloadedIds.includes(sound.id)) ||
+        (libraryView === "favorites" && favoriteIds.includes(sound.id));
       const searchMatch =
         normalizedQuery.length === 0 ||
         [sound.title, sound.mood, sound.bpm?.toString() ?? "any bpm", sound.tags.join(" ")]
@@ -133,7 +153,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
           .toLowerCase()
           .includes(normalizedQuery);
 
-      return categoryMatch && downloadedMatch && searchMatch;
+      return categoryMatch && libraryMatch && searchMatch;
     });
 
     return [...nextSounds].sort((a, b) => {
@@ -147,17 +167,18 @@ export function HomeClient({ sounds }: HomeClientProps) {
 
       return 0;
     });
-  }, [activeCategory, downloadedIds, libraryView, liveSounds, query, sortMode]);
+  }, [activeCategory, downloadedIds, favoriteIds, libraryView, liveSounds, query, sortMode]);
 
   return (
     <main className="grain min-h-screen">
-      <Hero />
+      <Hero soundCount={liveSounds.length} />
 
       <section id="library" className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-8 pt-4 sm:px-6 lg:px-8">
         <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
           <div className="flex flex-wrap gap-2">
             <StatPill icon={Disc3} label="Assets" value={`${liveSounds.length}`} tone="dark" />
             <StatPill icon={CheckCircle2} label="Saved" value={`${downloadedIds.length}`} tone="dark" />
+            <StatPill icon={Heart} label="Stash" value={`${favoriteIds.length}`} tone="coral" />
             <StatPill icon={Sparkles} label="Fresh" value="Weekly" tone="coral" />
             <StatPill icon={ArrowDownToLine} label="Daily base" value="12 credits" tone="volt" />
           </div>
@@ -172,7 +193,11 @@ export function HomeClient({ sounds }: HomeClientProps) {
           </aside>
 
           <div className="space-y-3">
-            <div className="grid gap-2 border-2 border-ink bg-white p-2 shadow-hard lg:grid-cols-[1fr_170px_170px_auto]">
+            <div
+              className={`grid gap-2 border-2 border-ink bg-white p-2 shadow-hard ${
+                hasActiveFilters ? "lg:grid-cols-[1fr_170px_170px_auto_auto]" : "lg:grid-cols-[1fr_170px_170px_auto]"
+              }`}
+            >
               <label className="flex h-12 items-center gap-3 border-2 border-ink bg-bone px-3">
                 <Search className="h-5 w-5 shrink-0" aria-hidden />
                 <input
@@ -183,51 +208,74 @@ export function HomeClient({ sounds }: HomeClientProps) {
                 />
               </label>
 
-              <select
-                value={activeCategory}
-                onChange={(event) => setActiveCategory(event.target.value)}
-                className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none lg:hidden"
-                aria-label="Filter category"
-              >
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative lg:hidden">
+                <select
+                  value={activeCategory}
+                  onChange={(event) => setActiveCategory(event.target.value)}
+                  className="h-12 w-full appearance-none border-2 border-ink bg-bone py-0 pl-3 pr-10 font-display text-xs font-black uppercase outline-none"
+                  aria-label="Filter category"
+                >
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" aria-hidden />
+              </div>
 
-              <select
-                value={libraryView}
-                onChange={(event) => setLibraryView(event.target.value as LibraryView)}
-                className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none"
-                aria-label="Filter downloads"
-              >
-                <option value="all">All sounds</option>
-                <option value="downloaded">Downloaded</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={libraryView}
+                  onChange={(event) => setLibraryView(event.target.value as LibraryView)}
+                  className="h-12 w-full appearance-none border-2 border-ink bg-bone py-0 pl-3 pr-10 font-display text-xs font-black uppercase outline-none"
+                  aria-label="Filter downloads"
+                >
+                  <option value="all">All sounds</option>
+                  <option value="downloaded">Download history</option>
+                  <option value="favorites">Your stash</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" aria-hidden />
+              </div>
 
-              <select
-                value={sortMode}
-                onChange={(event) => setSortMode(event.target.value as SortMode)}
-                className="h-12 border-2 border-ink bg-bone px-3 font-display text-xs font-black uppercase outline-none"
-                aria-label="Sort sounds"
-              >
-                <option value="fresh">Newest</option>
-                <option value="title">A-Z</option>
-                <option value="bpm">BPM</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={sortMode}
+                  onChange={(event) => setSortMode(event.target.value as SortMode)}
+                  className="h-12 w-full appearance-none border-2 border-ink bg-bone py-0 pl-3 pr-10 font-display text-xs font-black uppercase outline-none"
+                  aria-label="Sort sounds"
+                >
+                  <option value="fresh">Newest</option>
+                  <option value="title">A-Z</option>
+                  <option value="bpm">BPM</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" aria-hidden />
+              </div>
 
-              <div className="flex h-12 items-center justify-center gap-2 border-2 border-ink bg-ink px-3 font-display text-xs font-black uppercase text-bone shadow-[6px_6px_0_#ffffff]">
-                <SlidersHorizontal className="h-4 w-4" aria-hidden />
-                {filteredSounds.length}
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="h-12 border-2 border-ink bg-white px-3 font-display text-xs font-black uppercase text-ink transition hover:bg-bone"
+                >
+                  Clear filters
+                </button>
+              ) : null}
+
+              <div className="flex h-12 items-center justify-center px-2 text-xs font-black uppercase text-ink/55">
+                {filteredSounds.length} {filteredSounds.length === 1 ? "sound" : "sounds"}
               </div>
             </div>
 
             <SoundLibrary
               sounds={filteredSounds}
+              activeCategory={activeCategory}
+              libraryView={libraryView}
               downloadedIds={downloadedIds}
+              favoriteIds={favoriteIds}
               isRefreshing={isRefreshingSounds}
               onDownloadRecorded={recordDownload}
+              onFavoriteToggle={toggleFavorite}
             />
           </div>
         </div>

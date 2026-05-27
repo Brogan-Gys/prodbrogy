@@ -11,6 +11,7 @@ export type SoundAsset = {
   id: string;
   title: string;
   category: string;
+  createdAt?: string;
   producerName: string;
   bpm: number | null;
   mood: string;
