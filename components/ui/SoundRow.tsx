@@ -422,54 +422,54 @@ export function SoundRow({
 
   return (
     <>
-      <article data-sound-row className="grid gap-2 border-2 border-ink bg-white p-2 shadow-[4px_4px_0_#11110f] lg:grid-cols-[1fr_220px]">
-        <div className="grid gap-2 md:grid-cols-[48px_1fr]">
+      <article data-sound-row className="grid gap-1.5 border-2 border-ink bg-white p-1.5 shadow-[4px_4px_0_#11110f] lg:grid-cols-[1fr_220px] lg:gap-2 lg:p-2">
+        <div className="grid grid-cols-[36px_1fr] gap-1.5 lg:grid-cols-[48px_1fr] lg:gap-2">
           <button
             type="button"
             onClick={handlePreview}
             className={cn(
-              "flex h-12 w-12 items-center justify-center border-2 border-ink transition hover:-translate-y-0.5",
+              "flex h-9 w-9 items-center justify-center border-2 border-ink transition hover:-translate-y-0.5 lg:h-12 lg:w-12",
               accentClass[sound.accent]
-            )} 
+            )}
             aria-label={`${isAudioLoading ? "Loading" : isPlaying ? "Pause" : "Play"} ${sound.title}`}
           >
             {isAudioLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin lg:h-5 lg:w-5" />
             ) : isPlaying ? (
-              <Pause className="h-5 w-5" />
+              <Pause className="h-4 w-4 lg:h-5 lg:w-5" />
             ) : (
-              <Play className="h-5 w-5 fill-current" />
+              <Play className="h-4 w-4 fill-current lg:h-5 lg:w-5" />
             )}
           </button>
 
           <div className="min-w-0">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <p className="font-display text-xl font-black uppercase leading-tight">{sound.title}</p>
+            <div className="flex flex-wrap items-start justify-between gap-1.5 lg:gap-2">
+              <div className="min-w-0">
+                <p className="truncate font-display text-base font-black uppercase leading-tight lg:text-xl">{sound.title}</p>
                 {sound.producerName ? (
-                  <p className="mt-1 text-xs font-black uppercase text-ink/70">Collab with {sound.producerName}</p>
+                  <p className="mt-0.5 truncate text-[10px] font-black uppercase text-ink/70 lg:mt-1 lg:text-xs">Collab with {sound.producerName}</p>
                 ) : null}
-                {meta ? <p className="mt-1 text-xs font-bold uppercase text-ink/55">{meta}</p> : null}
+                {meta ? <p className="mt-0.5 truncate text-[10px] font-bold uppercase text-ink/55 lg:mt-1 lg:text-xs">{meta}</p> : null}
               </div>
-              <div className="flex flex-wrap justify-end gap-2">
+              <div className="flex flex-wrap justify-end gap-1 lg:gap-2">
                 {isNew ? (
-                  <span className="inline-flex items-center border-2 border-ink bg-volt px-2 py-0.5 font-display text-[11px] font-black uppercase">
+                  <span className="inline-flex items-center border-2 border-ink bg-volt px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]">
                     New
                   </span>
                 ) : null}
                 {showCategoryIndicator ? (
-                  <span className="inline-flex items-center border-2 border-ink bg-bone px-2 py-0.5 font-display text-[11px] font-black uppercase">
+                  <span className="inline-flex items-center border-2 border-ink bg-bone px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]">
                     {categoryLabels.get(sound.category) ?? sound.category}
                   </span>
                 ) : null}
                 {isDownloaded ? (
-                  <span className="inline-flex items-center gap-1 border-2 border-ink bg-cyan px-2 py-0.5 font-display text-[11px] font-black uppercase">
-                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                  <span className="inline-flex items-center gap-1 border-2 border-ink bg-cyan px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]">
+                    <CheckCircle2 className="h-3 w-3 lg:h-3.5 lg:w-3.5" aria-hidden />
                     Downloaded
                   </span>
                 ) : null}
                 <span
-                  className={cn("border-2 border-ink px-2 py-0.5 font-display text-[11px] font-black uppercase", accentClass[sound.accent])}
+                  className={cn("border-2 border-ink px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]", accentClass[sound.accent])}
                   title={getCreditLabel(sound.credits)}
                 >
                   {getCreditLabel(sound.credits)}
@@ -477,8 +477,8 @@ export function SoundRow({
               </div>
             </div>
 
-            <div className="mt-3 border-2 border-ink bg-bone p-1.5">
-              <div className="h-2 overflow-hidden border-2 border-ink bg-white">
+            <div className="mt-1.5 border-2 border-ink bg-bone p-1 lg:mt-3 lg:p-1.5">
+              <div className="h-1.5 overflow-hidden border-2 border-ink bg-white lg:h-2">
                 <span
                   className={cn("block h-full transition-[width]", isPlaying ? accentClass[sound.accent] : "bg-ink/55")}
                   style={{ width: `${playhead * 100}%` }}
@@ -489,37 +489,38 @@ export function SoundRow({
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col justify-between gap-2 border-t-2 border-ink pt-2 lg:border-l-2 lg:border-t-0 lg:pl-2 lg:pt-0">
-          <div className="flex flex-wrap gap-2">
+        <div className="flex min-w-0 flex-col justify-between gap-1.5 border-t-2 border-ink pt-1.5 lg:gap-2 lg:border-l-2 lg:border-t-0 lg:pl-2 lg:pt-0">
+          <div className="hidden flex-wrap gap-2 lg:flex">
             {sound.tags.map((tag) => (
               <span key={tag} className="border border-ink/20 bg-bone px-2 py-0.5 text-[11px] font-bold uppercase text-ink/65">
                 {tag}
               </span>
             ))}
           </div>
-          <div className="flex min-w-0 items-center justify-between gap-2">
-            <p className="min-h-5 min-w-0 flex-1 truncate text-xs font-bold uppercase text-ink/55">
+          <div className="flex min-w-0 items-center justify-between gap-1.5 lg:gap-2">
+            <p className="min-w-0 flex-1 truncate text-[10px] font-bold uppercase text-ink/55 lg:min-h-5 lg:text-xs">
               {notice || getTimeLabel(currentTime, audioDuration, previewLimit, sound.duration)}
             </p>
             <button
               type="button"
               onClick={() => onFavoriteToggle?.(sound)}
               className={cn(
-                "inline-flex h-9 w-9 shrink-0 items-center justify-center border-2 border-ink transition hover:-translate-y-0.5",
+                "inline-flex h-8 w-8 shrink-0 items-center justify-center border-2 border-ink transition hover:-translate-y-0.5 lg:h-9 lg:w-9",
                 isFavorited ? "bg-coral text-ink" : "bg-white text-ink"
               )}
               aria-label={`${isFavorited ? "Remove from" : "Add to"} stash: ${sound.title}`}
               title={isFavorited ? "Remove from stash" : "Add to stash"}
             >
-              <Heart className={cn("h-4 w-4", isFavorited && "fill-current")} aria-hidden />
+              <Heart className={cn("h-3.5 w-3.5 lg:h-4 lg:w-4", isFavorited && "fill-current")} aria-hidden />
             </button>
             <button
               type="button"
               onClick={handleDownload}
-              className="inline-flex h-9 shrink-0 items-center gap-1.5 border-2 border-ink bg-ink px-2.5 font-display text-[11px] font-black uppercase text-bone transition hover:-translate-y-0.5"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center gap-1.5 border-2 border-ink bg-ink font-display text-[11px] font-black uppercase text-bone transition hover:-translate-y-0.5 lg:h-9 lg:w-auto lg:px-2.5"
+              aria-label={`Download ${sound.title}`}
             >
               <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden />
-              Download
+              <span className="hidden lg:inline">Download</span>
             </button>
           </div>
         </div>
