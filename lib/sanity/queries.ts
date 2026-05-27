@@ -12,6 +12,7 @@ type SoundFetchOptions = {
 
 const fetchOptions =
   process.env.NODE_ENV === "development" ? { cache: "no-store" as const } : { next: { revalidate: 60 } };
+const SOUND_FETCH_TIMEOUT_MS = 5000;
 
 const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   "id": _id,
@@ -29,13 +30,30 @@ const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   downloadUrl
 }`;
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error("Sanity sound fetch timed out")), timeoutMs);
+      })
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
+}
+
 export async function getSounds(options: SoundFetchOptions = fetchOptions): Promise<SoundAsset[]> {
   if (!hasSanityConfig) {
     return [];
   }
 
   try {
-    const sounds = await sanityClient.fetch<SoundAsset[]>(soundsQuery, {}, options);
+    const sounds = await withTimeout(sanityClient.fetch<SoundAsset[]>(soundsQuery, {}, options), SOUND_FETCH_TIMEOUT_MS);
 
     return sounds.map((sound) => ({
       ...sound,

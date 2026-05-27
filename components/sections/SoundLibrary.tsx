@@ -78,6 +78,7 @@ export function SoundLibrary({
           enableArrowNavigation={false}
           displayScrollbar={true}
           maxVisibleItems={visibleRowLimit}
+          minVisibleItems={visibleRowLimit}
           getItemKey={(sound) => sound.id}
           emptyState={
             <div className="border-2 border-ink bg-white p-6 text-center shadow-hard sm:p-8">

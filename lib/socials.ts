@@ -30,13 +30,13 @@ export const socialLinks: SocialLink[] = [
     Icon: Star,
     tone: "bg-cyan"
   },
-  {
-    id: "telegram",
-    label: "Telegram",
-    href: "https://t.me/prodbrogy",
-    Icon: Send,
-    tone: "bg-white"
-  }
+  // {
+  //   id: "telegram",
+  //   label: "Telegram",
+  //   href: "https://t.me/prodbrogy",
+  //   Icon: Send,
+  //   tone: "bg-white"
+  // }
 ];
 
 export const socialBonusLinks = socialLinks.filter((link) => link.id !== "telegram");

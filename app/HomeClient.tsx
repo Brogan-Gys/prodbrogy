@@ -170,7 +170,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
   }, [activeCategory, downloadedIds, favoriteIds, libraryView, liveSounds, query, sortMode]);
 
   return (
-    <main className="grain min-h-screen">
+    <main className="grain min-h-screen bg-bone text-ink">
       <Hero soundCount={liveSounds.length} />
 
       <section id="library" className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-8 pt-4 sm:px-6 lg:px-8">

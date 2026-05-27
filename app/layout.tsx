@@ -1,29 +1,18 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { siteConfig } from "@/lib/site";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap"
-});
-
-const space = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space",
-  display: "swap"
-});
-
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://prodbrogy.com"),
+  metadataBase: new URL(siteConfig.url),
   title: {
-    default: "Prodbrogy Sound Supply",
+    default: siteConfig.name,
     template: "%s | Prodbrogy"
   },
-  description: "Download MIDI, loops, phrases, one shots, and starter ideas from the Prodbrogy sound vault.",
-  applicationName: "Prodbrogy",
+  description: siteConfig.description,
+  applicationName: siteConfig.shortName,
   keywords: [
     "Prodbrogy",
+    "Prodbrogy Sound Supply",
     "producer sounds",
     "MIDI downloads",
     "loop kits",
@@ -39,22 +28,31 @@ export const metadata: Metadata = {
     icon: "/icon.png",
     apple: "/apple-icon.png"
   },
+  alternates: {
+    canonical: "/"
+  },
   openGraph: {
-    title: "Prodbrogy Sound Supply",
+    title: siteConfig.name,
     description: "A credit-based sound vault for MIDI, loops, phrases, one shots, and starter ideas.",
     url: "/",
-    siteName: "Prodbrogy",
+    siteName: siteConfig.shortName,
     type: "website",
     locale: "en_US"
   },
   twitter: {
     card: "summary",
-    title: "Prodbrogy Sound Supply",
-    description: "Download MIDI, loops, phrases, one shots, and starter ideas from the Prodbrogy sound vault."
+    title: siteConfig.name,
+    description: siteConfig.description
   },
   robots: {
     index: true,
-    follow: true
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1
+    }
   }
 };
 
@@ -65,7 +63,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${space.variable}`}>{children}</body>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }

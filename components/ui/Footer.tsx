@@ -18,13 +18,15 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={label}
-              className="inline-flex h-9 items-center justify-center gap-2 border-2 border-ink bg-white px-2 font-display text-[10px] font-black uppercase shadow-hard transition hover:-translate-y-0.5 sm:h-10 sm:px-3 sm:text-xs"
+              className="inline-flex h-8 min-w-0 items-center justify-center gap-1.5 border-2 border-ink bg-white px-1.5 font-display text-[9px] font-black uppercase shadow-[4px_4px_0_#11110f] transition hover:-translate-y-0.5 sm:h-9 sm:px-2 sm:text-[10px] lg:h-10 lg:gap-2 lg:px-3 lg:text-xs lg:shadow-hard"
             >
-              <span className={`hidden h-6 w-6 items-center justify-center border-2 border-ink sm:flex ${tone}`}>
-                <Icon className="h-3.5 w-3.5" aria-hidden />
+              <span
+                className={`hidden h-5 w-5 shrink-0 items-center justify-center border-2 border-ink sm:flex lg:h-6 lg:w-6 ${tone}`}
+              >
+                <Icon className="h-3 w-3 lg:h-3.5 lg:w-3.5" aria-hidden />
               </span>
-              <span>{label}</span>
-              <ExternalLink className="hidden h-3.5 w-3.5 sm:block" aria-hidden />
+              <span className="truncate">{label}</span>
+              <ExternalLink className="hidden h-3 w-3 shrink-0 sm:block lg:h-3.5 lg:w-3.5" aria-hidden />
             </a>
           ))}
         </div>

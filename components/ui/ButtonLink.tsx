@@ -15,11 +15,13 @@ export function ButtonLink({ href, children, icon: Icon, variant = "dark", onCli
       href={href}
       onClick={onClick}
       className={cn(
-        "inline-flex h-12 items-center gap-2 border-2 border-ink px-4 font-display text-sm font-black uppercase transition hover:-translate-y-0.5",
-        variant === "dark" ? "bg-ink text-bone shadow-[6px_6px_0_#3a342c]" : "bg-white text-ink shadow-hard"
+        "inline-flex h-10 items-center gap-1.5 border-2 border-ink px-3 font-display text-xs font-black uppercase transition hover:-translate-y-0.5 sm:h-12 sm:gap-2 sm:px-4 sm:text-sm",
+        variant === "dark"
+          ? "bg-ink text-bone shadow-[4px_4px_0_#3a342c] sm:shadow-[6px_6px_0_#3a342c]"
+          : "bg-white text-ink shadow-[4px_4px_0_#11110f] sm:shadow-hard"
       )}
     >
-      <Icon className="h-4 w-4" aria-hidden />
+      <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden />
       {children}
     </a>
   );

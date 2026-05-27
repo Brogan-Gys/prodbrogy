@@ -44,6 +44,7 @@ type AnimatedListProps<T> = {
   displayScrollbar?: boolean;
   initialSelectedIndex?: number;
   maxVisibleItems?: number;
+  minVisibleItems?: number;
   emptyState?: ReactNode;
   getItemKey?: (item: T, index: number) => string | number;
   renderItem?: (item: T, index: number, selected: boolean) => ReactNode;
@@ -78,6 +79,7 @@ export default function AnimatedList<T = string>({
   displayScrollbar = true,
   initialSelectedIndex = -1,
   maxVisibleItems,
+  minVisibleItems,
   emptyState,
   getItemKey,
   renderItem
@@ -88,6 +90,7 @@ export default function AnimatedList<T = string>({
   const [topGradientOpacity, setTopGradientOpacity] = useState(0);
   const [bottomGradientOpacity, setBottomGradientOpacity] = useState(0);
   const [maxHeight, setMaxHeight] = useState<number | null>(null);
+  const [minHeight, setMinHeight] = useState<number | null>(null);
 
   const handleItemMouseEnter = useCallback((index: number) => {
     setSelectedIndex(index);
@@ -117,8 +120,9 @@ export default function AnimatedList<T = string>({
   useLayoutEffect(() => {
     const container = listRef.current;
 
-    if (!container || !maxVisibleItems || items.length <= maxVisibleItems) {
+    if (!container || (!maxVisibleItems && !minVisibleItems)) {
       setMaxHeight(null);
+      setMinHeight(null);
       window.requestAnimationFrame(handleScroll);
       return;
     }
@@ -126,14 +130,33 @@ export default function AnimatedList<T = string>({
     const measure = () => {
       const itemNodes = container.querySelectorAll<HTMLElement>("[data-index]");
       const first = itemNodes[0];
-      const last = itemNodes[maxVisibleItems - 1];
 
-      if (!first || !last) {
+      if (!first) {
         setMaxHeight(null);
+        window.requestAnimationFrame(handleScroll);
         return;
       }
 
-      setMaxHeight(last.offsetTop + last.offsetHeight - first.offsetTop);
+      const getHeightForRows = (rowCount: number) => {
+        const lastMeasured = itemNodes[rowCount - 1];
+
+        if (lastMeasured) {
+          return lastMeasured.offsetTop + lastMeasured.offsetHeight - first.offsetTop;
+        }
+
+        const second = itemNodes[1];
+        const rowStep = second ? second.offsetTop - first.offsetTop : first.offsetHeight + Number.parseFloat(window.getComputedStyle(first).marginBottom || "0");
+
+        return first.offsetHeight + rowStep * Math.max(rowCount - 1, 0);
+      };
+
+      if (maxVisibleItems && items.length > maxVisibleItems) {
+        setMaxHeight(getHeightForRows(maxVisibleItems));
+      } else {
+        setMaxHeight(null);
+      }
+
+      setMinHeight(minVisibleItems ? getHeightForRows(minVisibleItems) : null);
       window.requestAnimationFrame(handleScroll);
     };
 
@@ -144,7 +167,7 @@ export default function AnimatedList<T = string>({
     container.querySelectorAll<HTMLElement>("[data-index]").forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [handleScroll, items.length, maxVisibleItems]);
+  }, [handleScroll, items.length, maxVisibleItems, minVisibleItems]);
 
   useEffect(() => {
     handleScroll();
@@ -205,11 +228,15 @@ export default function AnimatedList<T = string>({
 
   const scrollStyle: CSSProperties = {
     scrollbarWidth: displayScrollbar ? "thin" : "none",
-    scrollbarColor: "#11110f #f6f1e7"
+    scrollbarColor: "#11110f #ffffff"
   };
 
   if (maxHeight) {
     scrollStyle.maxHeight = maxHeight;
+  }
+
+  if (minHeight) {
+    scrollStyle.minHeight = minHeight;
   }
 
   return (
