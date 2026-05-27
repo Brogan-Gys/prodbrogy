@@ -62,7 +62,7 @@ export function SubmissionCallout() {
 
   return (
     <aside
-      className={`fixed bottom-4 right-3 z-40 transition duration-300 sm:bottom-6 sm:right-6 ${
+      className={`fixed bottom-6 right-6 z-40 hidden transition duration-300 lg:block ${
         isVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
     >
