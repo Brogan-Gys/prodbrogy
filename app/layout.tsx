@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "Prodbrogy Sound Supply",
     "producer sounds",
     "MIDI downloads",
-    "loop kits",
+    "loops",
     "one shots",
     "beat maker samples",
     "music production"
@@ -24,10 +24,6 @@ export const metadata: Metadata = {
   creator: "Prodbrogy",
   publisher: "Prodbrogy",
   category: "music",
-  icons: {
-    icon: "/icon.png",
-    apple: "/apple-icon.png"
-  },
   alternates: {
     canonical: "/"
   },
@@ -40,7 +36,7 @@ export const metadata: Metadata = {
     locale: "en_US"
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description
   },

@@ -18,6 +18,7 @@ type HomeClientProps = {
 
 const DOWNLOAD_HISTORY_KEY = "prodbrogy-download-history";
 const FAVORITE_SOUNDS_KEY = "prodbrogy-favorite-sounds";
+const SOUNDS_CACHE_KEY = "prodbrogy-sounds-cache";
 
 type LibraryView = "all" | "downloaded" | "favorites";
 type SortMode = "fresh" | "title" | "bpm";
@@ -30,6 +31,23 @@ function readStoredIds(key: string) {
     return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : [];
   } catch {
     return [];
+  }
+}
+
+function readCachedSounds(): SoundAsset[] | null {
+  try {
+    const parsed = JSON.parse(window.sessionStorage.getItem(SOUNDS_CACHE_KEY) || "null") as SoundAsset[] | null;
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedSounds(sounds: SoundAsset[]) {
+  try {
+    window.sessionStorage.setItem(SOUNDS_CACHE_KEY, JSON.stringify(sounds));
+  } catch {
+    // sessionStorage unavailable (private mode / quota) — caching is best-effort
   }
 }
 
@@ -48,6 +66,19 @@ export function HomeClient({ sounds }: HomeClientProps) {
     setDownloadedIds(readStoredIds(DOWNLOAD_HISTORY_KEY));
     setFavoriteIds(readStoredIds(FAVORITE_SOUNDS_KEY));
   }, []);
+
+  useEffect(() => {
+    if (sounds.length > 0) {
+      writeCachedSounds(sounds);
+      return;
+    }
+
+    const cached = readCachedSounds();
+    if (cached && cached.length > 0) {
+      soundSignatureRef.current = JSON.stringify(cached);
+      setLiveSounds(cached);
+    }
+  }, [sounds]);
 
   useEffect(() => {
     let isMounted = true;
@@ -79,6 +110,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
         }
 
         soundSignatureRef.current = nextSignature;
+        writeCachedSounds(nextSounds);
         setIsRefreshingSounds(true);
         if (swapTimer) {
           window.clearTimeout(swapTimer);

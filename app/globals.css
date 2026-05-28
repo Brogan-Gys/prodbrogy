@@ -46,11 +46,7 @@ body {
   margin: 0;
   overflow-x: hidden;
   color: #11110f;
-  background:
-    linear-gradient(90deg, rgba(17, 17, 15, 0.05) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(17, 17, 15, 0.05) 1px, transparent 1px),
-    #f6f1e7;
-  background-size: 36px 36px;
+  background: #f6f1e7;
   font-family: var(--font-inter), Arial, sans-serif;
 }
 

@@ -9,7 +9,7 @@ export function getSubmissionMailto() {
     "",
     "Name:",
     "Social handle:",
-    "Which kit/sound did you use:",
+    "Which sound did you use:",
     "Link or notes:",
     "",
     "I attached the beat/melody to this email."
