@@ -80,7 +80,7 @@ export function CreditMeter() {
         <div className="h-full bg-volt transition-all" style={{ width: `${percent}%` }} />
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs font-bold uppercase text-ink/55">
-        <p>{resetLabel}</p>
+        {state.used > 0 ? <p>{resetLabel}</p> : null}
         {bonusCredits > 0 ? <p>+{bonusCredits} social bonus credits active today</p> : null}
       </div>
     </div>
