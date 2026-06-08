@@ -231,7 +231,9 @@ export function HomeClient({ sounds, freeKits }: HomeClientProps) {
             <StatPill icon={ArrowDownToLine} label="Daily base" value="12 credits" tone="volt" />
           </div>
           <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-[220px_280px]">
-            <PreviewVolumeControl />
+            <div className="hidden lg:block">
+              <PreviewVolumeControl />
+            </div>
             <CreditMeter />
           </div>
         </div>

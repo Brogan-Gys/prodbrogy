@@ -207,9 +207,14 @@ export function SoundRow({
 
       previewVolumeRef.current = nextVolume;
 
-      if (audioRef.current && !fadeStartedRef.current) {
-        audioRef.current.volume = nextVolume;
+    if (audioRef.current && !fadeStartedRef.current) {
+      audioRef.current.muted = nextVolume <= 0;
+      audioRef.current.volume = nextVolume;
+
+      if (nextVolume <= 0) {
+        stopPlayback("Volume is muted");
       }
+    }
     };
 
     window.addEventListener(PREVIEW_VOLUME_CHANGE_EVENT, syncPreviewVolume);
@@ -254,6 +259,7 @@ export function SoundRow({
     if (audio) {
       audio.pause();
       audio.currentTime = 0;
+      audio.muted = previewVolumeRef.current <= 0;
       audio.volume = previewVolumeRef.current;
     }
 
@@ -330,6 +336,13 @@ export function SoundRow({
   };
 
   const handlePreview = () => {
+    previewVolumeRef.current = readStoredPreviewVolume();
+
+    if (previewVolumeRef.current <= 0) {
+      stopPlayback("Volume is muted");
+      return;
+    }
+
     const previewSource = sound.previewUrl;
 
     if (!previewSource) {
@@ -380,6 +393,7 @@ export function SoundRow({
     activatePreview();
     setIsAudioLoading(true);
     audioRef.current.currentTime = 0;
+    audioRef.current.muted = false;
     audioRef.current.volume = previewVolumeRef.current;
     fadeStartedRef.current = false;
     audioRef.current
