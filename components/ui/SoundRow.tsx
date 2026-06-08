@@ -9,12 +9,17 @@ import {
   normalizeCreditState,
   type CreditState
 } from "@/lib/credits";
+import {
+  DEFAULT_PREVIEW_VOLUME,
+  PREVIEW_VOLUME_CHANGE_EVENT,
+  PREVIEW_VOLUME_STORAGE_KEY,
+  normalizePreviewVolume
+} from "@/lib/previewVolume";
 import { cn } from "@/lib/utils";
-import { categories, type SoundAsset } from "@/lib/sounds";
+import { type SoundAsset } from "@/lib/sounds";
 
 type SoundRowProps = {
   sound: SoundAsset;
-  showCategoryIndicator?: boolean;
   isDownloaded?: boolean;
   isFavorited?: boolean;
   onDownloadRecorded?: (sound: SoundAsset) => void;
@@ -36,7 +41,13 @@ const accentClass = {
 const audioFilePattern = /\.(mp3|wav|m4a|ogg|flac|webm)(\?|#|$)/i;
 const downloadableFilePattern = /\.(zip|rar|7z|mp3|wav|m4a|ogg|flac|webm|mid|midi)(\?|#|$)/i;
 let activePreview: ActivePreview | null = null;
-const categoryLabels = new Map(categories.map((category) => [category.id, category.label]));
+const typeLabels = new Map([
+  ["midi", "MIDI"],
+  ["loops", "Loop"],
+  ["phrases", "Phrase"],
+  ["oneshots", "One shot"],
+  ["starters", "Starter"]
+]);
 const newSoundWindowMs = 1000 * 60 * 60 * 24 * 2;
 
 function getIframeSrc(value: string) {
@@ -123,25 +134,6 @@ function getPlayableDuration(duration: number, previewLimit: number | null, fall
   return safeDuration > 0 ? Math.min(safeDuration, previewLimit) : previewLimit;
 }
 
-function formatTime(seconds: number) {
-  const safeSeconds = Math.max(0, Math.floor(seconds));
-  const minutes = Math.floor(safeSeconds / 60);
-  const remainingSeconds = safeSeconds % 60;
-
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
-
-function getTimeLabel(currentTime: number, duration: number | null, previewLimit: number | null, fallbackDuration: string) {
-  const fallbackSeconds = parseDurationSeconds(fallbackDuration);
-
-  if (currentTime <= 0) {
-    return previewLimit ? formatTime(getPlayableDuration(0, previewLimit, fallbackSeconds)) : fallbackDuration;
-  }
-
-  const playableDuration = getPlayableDuration(duration ?? 0, previewLimit, fallbackSeconds);
-  return `${formatTime(currentTime)} / ${formatTime(playableDuration)}`;
-}
-
 function isRecentlyAdded(createdAt?: string) {
   if (!createdAt) {
     return false;
@@ -156,9 +148,16 @@ function getCreditLabel(credits: number) {
   return `Costs ${credits} ${credits === 1 ? "credit" : "credits"}`;
 }
 
+function readStoredPreviewVolume() {
+  try {
+    return normalizePreviewVolume(window.localStorage.getItem(PREVIEW_VOLUME_STORAGE_KEY));
+  } catch {
+    return DEFAULT_PREVIEW_VOLUME;
+  }
+}
+
 export function SoundRow({
   sound,
-  showCategoryIndicator = false,
   isDownloaded = false,
   isFavorited = false,
   onDownloadRecorded,
@@ -167,16 +166,15 @@ export function SoundRow({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [embedUrl, setEmbedUrl] = useState("");
-  const [notice, setNotice] = useState("");
+  const [, setNotice] = useState("");
   const [playhead, setPlayhead] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const timerRef = useRef<number | null>(null);
   const progressTimerRef = useRef<number | null>(null);
   const fadeTimerRef = useRef<number | null>(null);
   const fadeStartedRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef("");
+  const previewVolumeRef = useRef(DEFAULT_PREVIEW_VOLUME);
 
   const previewLimit = useMemo(() => getPreviewLimit(sound.category), [sound.category]);
   const fallbackPreviewDuration = useMemo(() => parseDurationSeconds(sound.duration), [sound.duration]);
@@ -184,13 +182,10 @@ export function SoundRow({
 
   const meta = useMemo(
     () =>
-      [
-        sound.bpm && sound.bpm > 0 ? `${sound.bpm} BPM` : "",
-        sound.mood && sound.mood.toLowerCase() !== "untagged" ? sound.mood : ""
-      ]
+      [sound.bpm && sound.bpm > 0 ? `${sound.bpm} BPM` : ""]
         .filter(Boolean)
         .join(" / "),
-    [sound.bpm, sound.mood]
+    [sound.bpm]
   );
 
   const flashNotice = (message: string) => {
@@ -200,6 +195,31 @@ export function SoundRow({
     }
     timerRef.current = window.setTimeout(() => setNotice(""), 2200);
   };
+
+  useEffect(() => {
+    previewVolumeRef.current = readStoredPreviewVolume();
+  }, []);
+
+  useEffect(() => {
+    const syncPreviewVolume = (event?: Event) => {
+      const nextVolume =
+        event instanceof CustomEvent ? normalizePreviewVolume(event.detail) : readStoredPreviewVolume();
+
+      previewVolumeRef.current = nextVolume;
+
+      if (audioRef.current && !fadeStartedRef.current) {
+        audioRef.current.volume = nextVolume;
+      }
+    };
+
+    window.addEventListener(PREVIEW_VOLUME_CHANGE_EVENT, syncPreviewVolume);
+    window.addEventListener("storage", syncPreviewVolume);
+
+    return () => {
+      window.removeEventListener(PREVIEW_VOLUME_CHANGE_EVENT, syncPreviewVolume);
+      window.removeEventListener("storage", syncPreviewVolume);
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -234,13 +254,12 @@ export function SoundRow({
     if (audio) {
       audio.pause();
       audio.currentTime = 0;
-      audio.volume = 1;
+      audio.volume = previewVolumeRef.current;
     }
 
     setIsAudioLoading(false);
     setIsPlaying(false);
     setPlayhead(0);
-    setCurrentTime(0);
     fadeStartedRef.current = false;
 
     if (message) {
@@ -258,8 +277,6 @@ export function SoundRow({
       const duration = getPlayableDuration(audio.duration, previewLimit, fallbackPreviewDuration);
       const elapsed = Math.min(audio.currentTime, duration);
 
-      setCurrentTime(elapsed);
-      setAudioDuration(Number.isFinite(audio.duration) ? audio.duration : null);
       setPlayhead(duration > 0 ? Math.min(1, elapsed / duration) : 0);
 
       const fadeSeconds = Math.min(2, duration);
@@ -276,7 +293,7 @@ export function SoundRow({
   };
 
   const startFade = (audio: HTMLAudioElement, seconds: number) => {
-    const startVolume = audio.volume || 1;
+    const startVolume = audio.volume || previewVolumeRef.current;
     const startedAt = performance.now();
     const fadeMs = seconds * 1000;
 
@@ -331,7 +348,6 @@ export function SoundRow({
       setIsAudioLoading(false);
       setIsPlaying(false);
       setPlayhead(0);
-      setCurrentTime(0);
       fadeStartedRef.current = false;
       setEmbedUrl(megaEmbedUrl);
       flashNotice("Mega preview opened");
@@ -350,9 +366,6 @@ export function SoundRow({
       const audio = new Audio();
       audio.src = audioUrl;
       audio.preload = "metadata";
-      audio.addEventListener("loadedmetadata", () => {
-        setAudioDuration(Number.isFinite(audio.duration) ? audio.duration : null);
-      });
       audio.addEventListener("ended", () => stopPlayback());
       audioRef.current = audio;
       audioUrlRef.current = audioUrl;
@@ -367,7 +380,7 @@ export function SoundRow({
     activatePreview();
     setIsAudioLoading(true);
     audioRef.current.currentTime = 0;
-    audioRef.current.volume = 1;
+    audioRef.current.volume = previewVolumeRef.current;
     fadeStartedRef.current = false;
     audioRef.current
       .play()
@@ -438,7 +451,10 @@ export function SoundRow({
 
   return (
     <>
-      <article data-sound-row className="grid gap-1.5 border-2 border-ink bg-white p-1.5 shadow-[4px_4px_0_#11110f] lg:grid-cols-[1fr_220px] lg:gap-2 lg:p-2">
+      <article
+        data-sound-row
+        className="grid min-h-[94px] gap-1.5 border-2 border-ink bg-white p-1.5 shadow-[4px_4px_0_#11110f] lg:min-h-[98px] lg:grid-cols-[1fr_220px] lg:gap-2 lg:p-2"
+      >
         <div className="grid grid-cols-[36px_1fr] gap-1.5 lg:grid-cols-[48px_1fr] lg:gap-2">
           <button
             type="button"
@@ -467,17 +483,14 @@ export function SoundRow({
                   <p className="mt-0.5 truncate text-[10px] font-black uppercase text-ink/70 lg:mt-1 lg:text-xs">Collab with {sound.producerName}</p>
                 ) : null}
                 */}
-                {meta ? <p className="mt-0.5 truncate text-[10px] font-bold uppercase text-ink/55 lg:mt-1 lg:text-xs">{meta}</p> : null}
+                <p className="mt-0.5 min-h-3.5 truncate text-[10px] font-bold uppercase text-ink/55 lg:mt-1 lg:min-h-4 lg:text-xs">
+                  {meta}
+                </p>
               </div>
               <div className="flex flex-wrap justify-end gap-1 lg:gap-2">
                 {isNew ? (
                   <span className="inline-flex items-center border-2 border-ink bg-volt px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]">
                     New
-                  </span>
-                ) : null}
-                {showCategoryIndicator ? (
-                  <span className="inline-flex items-center border-2 border-ink bg-bone px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]">
-                    {categoryLabels.get(sound.category) ?? sound.category}
                   </span>
                 ) : null}
                 {isDownloaded ? (
@@ -508,17 +521,10 @@ export function SoundRow({
         </div>
 
         <div className="flex min-w-0 flex-col justify-between gap-1.5 border-t-2 border-ink pt-1.5 lg:gap-2 lg:border-l-2 lg:border-t-0 lg:pl-2 lg:pt-0">
-          <div className="hidden flex-wrap gap-2 lg:flex">
-            {sound.tags.map((tag) => (
-              <span key={tag} className="border border-ink/20 bg-bone px-2 py-0.5 text-[11px] font-bold uppercase text-ink/65">
-                {tag}
-              </span>
-            ))}
-          </div>
-          <div className="flex min-w-0 items-center justify-between gap-1.5 lg:gap-2">
-            <p className="min-w-0 flex-1 truncate text-[10px] font-bold uppercase text-ink/55 lg:min-h-5 lg:text-xs">
-              {notice || getTimeLabel(currentTime, audioDuration, previewLimit, sound.duration)}
-            </p>
+          <p className="min-w-0 truncate font-display text-sm font-black uppercase leading-none text-ink/65 lg:text-base">
+            {typeLabels.get(sound.category) ?? sound.category}
+          </p>
+          <div className="mt-auto flex min-w-0 items-center justify-end gap-1.5 lg:gap-2">
             <button
               type="button"
               onClick={() => onFavoriteToggle?.(sound)}

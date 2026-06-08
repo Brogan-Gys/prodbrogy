@@ -89,7 +89,6 @@ export function SoundLibrary({
           renderItem={(sound) => (
             <SoundRow
               sound={sound}
-              showCategoryIndicator={activeCategory === "all"}
               isDownloaded={downloadedIds.includes(sound.id)}
               isFavorited={favoriteIds.includes(sound.id)}
               onDownloadRecorded={onDownloadRecorded}

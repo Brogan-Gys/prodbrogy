@@ -22,6 +22,17 @@ export const structure: StructureResolver = (S) =>
       ),
       S.divider(),
       S.listItem()
+        .id("free-kits")
+        .title("Free Kits")
+        .schemaType("freeKit")
+        .child(
+          S.documentTypeList("freeKit")
+            .id("free-kits")
+            .title("Free Kits")
+            .defaultOrdering([{ field: "sortOrder", direction: "asc" }])
+        ),
+      S.divider(),
+      S.listItem()
         .id("all-sounds")
         .title("All Sounds")
         .schemaType("soundAsset")

@@ -26,6 +26,7 @@ type AdminSound = {
 };
 
 const uploadCategories = categories.filter((category) => category.id !== "all");
+const defaultUploadCategory = uploadCategories[0]?.id ?? "";
 const accents = ["volt", "coral", "cyan", "plum"] as const;
 const ADMIN_PASSWORD_STORAGE_KEY = "prodbrogy-admin-password";
 const ADMIN_PASSWORD_TTL_MS = 12 * 60 * 60 * 1000;
@@ -112,6 +113,13 @@ async function uploadFileDirectly(file: File, url: string, contentType: string) 
   }
 }
 
+async function getFileHash(file: File) {
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 function getUploadFile(formData: FormData, key: string) {
   const value = formData.get(key);
   return value instanceof File && value.size > 0 ? value : null;
@@ -127,6 +135,7 @@ export function UploadClient() {
   const [state, setState] = useState<UploadState>({ status: "idle", message: "" });
   const [sounds, setSounds] = useState<AdminSound[]>([]);
   const [loadingSounds, setLoadingSounds] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState(defaultUploadCategory);
 
   useEffect(() => {
     setPassword(readStoredAdminPassword());
@@ -164,10 +173,17 @@ export function UploadClient() {
 
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const previewFile = getUploadFile(formData, "previewFile");
+    const previewFile = uploadCategory === "midi" ? getUploadFile(formData, "previewFile") : null;
     const downloadFile = getUploadFile(formData, "downloadFile");
 
     try {
+      if (!downloadFile) {
+        throw new Error("Choose a download file.");
+      }
+
+      setState({ status: "submitting", message: "Checking for duplicate files..." });
+      const downloadFileHash = await getFileHash(downloadFile);
+
       const uploadUrlResponse = await fetch("/api/admin/upload-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -176,8 +192,10 @@ export function UploadClient() {
           title: getFormString(formData, "title"),
           previewFileName: previewFile?.name,
           previewContentType: previewFile?.type,
-          downloadFileName: downloadFile?.name,
-          downloadContentType: downloadFile?.type
+          downloadFileName: downloadFile.name,
+          downloadContentType: downloadFile.type,
+          downloadFileSize: downloadFile.size,
+          downloadFileHash
         })
       });
       const uploadTargets = await readApiJson<{
@@ -192,7 +210,7 @@ export function UploadClient() {
       }
 
       if (previewFile && uploadTargets.preview) {
-        setState({ status: "submitting", message: "Uploading preview directly to R2..." });
+        setState({ status: "submitting", message: "Uploading MIDI preview directly to R2..." });
         await uploadFileDirectly(previewFile, uploadTargets.preview.url, uploadTargets.preview.contentType);
       }
 
@@ -210,13 +228,16 @@ export function UploadClient() {
           baseKey: uploadTargets.baseKey,
           previewTempKey: uploadTargets.preview?.key,
           downloadKey: uploadTargets.download?.key,
+          originalFileName: downloadFile.name,
+          fileSize: downloadFile.size,
+          fileHash: downloadFileHash,
           title: getFormString(formData, "title"),
           category: getFormString(formData, "category"),
           producerName: getFormString(formData, "producerName"),
           bpm: getNumberValue(formData, "bpm"),
-          mood: getFormString(formData, "mood"),
+          mood: "",
           duration: getFormString(formData, "duration"),
-          tags: parseCsv(getFormString(formData, "tags")),
+          tags: [],
           accent: getFormString(formData, "accent")
         })
       });
@@ -228,6 +249,7 @@ export function UploadClient() {
 
       rememberAdminPassword(password);
       form.reset();
+      setUploadCategory(defaultUploadCategory);
       setState({
         status: "success",
         message: result.warning ? `Sound added, but ${result.warning}` : `Sound added to the site. Sanity ID: ${result.id}`
@@ -253,9 +275,9 @@ export function UploadClient() {
       category: getFormString(formData, "category"),
       producerName: getFormString(formData, "producerName"),
       bpm: getFormNumber(formData, "bpm"),
-      mood: getFormString(formData, "mood"),
+      mood: "",
       duration: getFormString(formData, "duration"),
-      tags: parseCsv(getFormString(formData, "tags")),
+      tags: [],
       accent: getFormString(formData, "accent"),
       previewUrl: getFormString(formData, "previewUrl"),
       downloadUrl: getFormString(formData, "downloadUrl")
@@ -358,7 +380,13 @@ export function UploadClient() {
           </Field>
 
           <Field label="Category">
-            <select name="category" required className="input">
+            <select
+              name="category"
+              required
+              className="input"
+              value={uploadCategory}
+              onChange={(event) => setUploadCategory(event.target.value)}
+            >
               {uploadCategories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.label}
@@ -385,24 +413,18 @@ export function UploadClient() {
             <input name="downloadFile" type="file" accept=".zip,.rar,.7z,.mid,.midi,audio/*" required className="file-input" />
           </Field>
 
-          <Field label="Preview audio - optional">
-            <input name="previewFile" type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.webm" className="file-input" />
-          </Field>
+          {uploadCategory === "midi" ? (
+            <Field label="Preview audio">
+              <input name="previewFile" type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.webm" required className="file-input" />
+            </Field>
+          ) : null}
 
           <Field label="BPM">
             <input name="bpm" type="number" min="0" className="input" placeholder="140" />
           </Field>
 
-          <Field label="Mood">
-            <input name="mood" className="input" placeholder="dark, glossy, bounce" />
-          </Field>
-
           <Field label="Duration">
             <input name="duration" className="input" placeholder="0:18" defaultValue="0:00" />
-          </Field>
-
-          <Field label="Tags">
-            <input name="tags" className="input" placeholder="trap, piano, loop" />
           </Field>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink pt-4 lg:col-span-2">
@@ -459,9 +481,6 @@ export function UploadClient() {
                 <Field label="BPM">
                   <input name="bpm" type="number" min="0" className="input" defaultValue={sound.bpm ?? ""} />
                 </Field>
-                <Field label="Mood">
-                  <input name="mood" className="input" defaultValue={sound.mood} />
-                </Field>
                 <Field label="Duration">
                   <input name="duration" className="input" defaultValue={sound.duration} />
                 </Field>
@@ -482,11 +501,6 @@ export function UploadClient() {
                 <div className="lg:col-span-2">
                   <Field label="Download path">
                     <input name="downloadUrl" className="input" defaultValue={sound.downloadUrl ?? ""} />
-                  </Field>
-                </div>
-                <div className="lg:col-span-4">
-                  <Field label="Tags">
-                    <input name="tags" className="input" defaultValue={sound.tags.join(", ")} />
                   </Field>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink pt-3 lg:col-span-4">

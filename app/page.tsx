@@ -1,9 +1,9 @@
 import { HomeClient } from "./HomeClient";
-import { getSounds } from "@/lib/sanity/queries";
+import { getFreeKits, getSounds } from "@/lib/sanity/queries";
 import { siteConfig } from "@/lib/site";
 
 export default async function Home() {
-  const sounds = await getSounds();
+  const [sounds, freeKits] = await Promise.all([getSounds(), getFreeKits()]);
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -35,7 +35,7 @@ export default async function Home() {
         suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <HomeClient sounds={sounds} />
+      <HomeClient sounds={sounds} freeKits={freeKits} />
     </>
   );
 }

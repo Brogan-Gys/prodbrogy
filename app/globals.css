@@ -15,7 +15,7 @@
 :root {
   --font-inter: "Inter", Arial, "Helvetica Neue", sans-serif;
   --font-space: "Space Grotesk", "Arial Black", Impact, "Trebuchet MS", sans-serif;
-  color-scheme: only light;
+  color-scheme: light only;
   background: #f6f1e7;
   color: #11110f;
 }
@@ -25,7 +25,7 @@
 }
 
 html {
-  color-scheme: only light;
+  color-scheme: light only;
   scroll-behavior: smooth;
   scrollbar-width: none;
 }
@@ -112,6 +112,64 @@ a {
 .sound-library-row {
   transition: transform 200ms ease-out;
   will-change: opacity, transform;
+}
+
+.volume-slider {
+  --volume-percent: 85%;
+  height: 18px;
+  appearance: none;
+  cursor: pointer;
+  background: transparent;
+  touch-action: pan-y;
+}
+
+.volume-slider:focus {
+  outline: none;
+}
+
+.volume-slider::-webkit-slider-runnable-track {
+  height: 14px;
+  border: 2px solid #11110f;
+  background: linear-gradient(to right, #ccff00 0 var(--volume-percent), #f6f1e7 var(--volume-percent) 100%);
+}
+
+.volume-slider::-webkit-slider-thumb {
+  width: 24px;
+  height: 24px;
+  margin-top: -7px;
+  appearance: none;
+  border: 2px solid #11110f;
+  background: #ffffff;
+  box-shadow: 3px 3px 0 #11110f;
+}
+
+.volume-slider:focus-visible::-webkit-slider-thumb {
+  background: #69e7ff;
+}
+
+.volume-slider::-moz-range-track {
+  height: 14px;
+  border: 2px solid #11110f;
+  background: #f6f1e7;
+}
+
+.volume-slider::-moz-range-progress {
+  height: 14px;
+  border: 2px solid #11110f;
+  background: #ccff00;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #11110f;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: 3px 3px 0 #11110f;
+}
+
+.volume-slider:focus-visible::-moz-range-thumb {
+  background: #69e7ff;
 }
 
 @media (prefers-reduced-motion: reduce) {

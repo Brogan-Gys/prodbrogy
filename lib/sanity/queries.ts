@@ -1,5 +1,6 @@
 import { sanityClient, hasSanityConfig } from "./client";
 import { getCategoryCreditCost } from "@/lib/credits";
+import type { FreeKit } from "@/lib/freeKits";
 import { getPublicAssetUrl } from "@/lib/storage";
 import type { SoundAsset } from "@/lib/sounds";
 
@@ -27,6 +28,17 @@ const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   "tags": coalesce(tags, []),
   "accent": coalesce(accent, "volt"),
   previewUrl,
+  downloadUrl
+}`;
+
+const freeKitsQuery = `*[_type == "freeKit" && published != false] | order(sortOrder asc, _createdAt desc) {
+  "id": _id,
+  title,
+  "type": coalesce(type, "Sample kit"),
+  "description": coalesce(description, ""),
+  "contents": coalesce(contents, []),
+  "accent": coalesce(accent, "volt"),
+  "imageUrl": coverImage.asset->url,
   downloadUrl
 }`;
 
@@ -60,6 +72,23 @@ export async function getSounds(options: SoundFetchOptions = fetchOptions): Prom
       credits: getCategoryCreditCost(sound.category, sound.credits),
       previewUrl: getPublicAssetUrl(sound.previewUrl),
       downloadUrl: getPublicAssetUrl(sound.downloadUrl)
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getFreeKits(options: SoundFetchOptions = fetchOptions): Promise<FreeKit[]> {
+  if (!hasSanityConfig) {
+    return [];
+  }
+
+  try {
+    const kits = await withTimeout(sanityClient.fetch<FreeKit[]>(freeKitsQuery, {}, options), SOUND_FETCH_TIMEOUT_MS);
+
+    return kits.map((kit) => ({
+      ...kit,
+      downloadUrl: getPublicAssetUrl(kit.downloadUrl)
     }));
   } catch {
     return [];

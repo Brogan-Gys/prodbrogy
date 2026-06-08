@@ -44,6 +44,24 @@ export const soundAsset = defineType({
       description: "Use an R2 path like downloads/kit.zip, or paste a full direct download URL."
     }),
     defineField({
+      name: "originalFileName",
+      title: "Original File Name",
+      type: "string",
+      readOnly: true
+    }),
+    defineField({
+      name: "fileSize",
+      title: "File Size",
+      type: "number",
+      readOnly: true
+    }),
+    defineField({
+      name: "fileHash",
+      title: "File Hash",
+      type: "string",
+      readOnly: true
+    }),
+    defineField({
       name: "bpm",
       title: "BPM",
       type: "number",

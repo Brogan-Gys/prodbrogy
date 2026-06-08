@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "crypto";
 import {
   getFileExtension,
   getMissingUploadEnv,
@@ -32,6 +33,14 @@ type FinalizeUploadRequest = {
   duration?: string;
   tags?: string[];
   accent?: string;
+  originalFileName?: string;
+  fileSize?: number;
+  fileHash?: string;
+};
+
+type DuplicateSound = {
+  title?: string;
+  originalFileName?: string;
 };
 
 function getString(formData: FormData, key: string) {
@@ -85,6 +94,40 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown upload error.";
 }
 
+function duplicateMessage(sound: DuplicateSound) {
+  return `"${sound.title || sound.originalFileName || "This file"}" already exists. Choose a different download file.`;
+}
+
+function getFileSize(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+async function getFileHash(file: File) {
+  const bytes = Buffer.from(await file.arrayBuffer());
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+async function findDuplicateDownload(fileHash?: string, fileName?: string, fileSize?: number | null) {
+  const hash = cleanString(fileHash);
+  const originalFileName = cleanString(fileName);
+  const size = getFileSize(fileSize);
+
+  if (!hash && (!originalFileName || size === null)) {
+    return null;
+  }
+
+  return getSanityWriteClient().fetch<DuplicateSound | null>(
+    `*[
+      _type == "soundAsset" &&
+      (
+        ($hash != "" && fileHash == $hash) ||
+        ($originalFileName != "" && $size != null && originalFileName == $originalFileName && fileSize == $size)
+      )
+    ][0]{title, originalFileName}`,
+    { hash, originalFileName, size }
+  );
+}
+
 async function finalizeDirectUpload(request: Request) {
   const body = (await request.json()) as FinalizeUploadRequest;
 
@@ -101,6 +144,19 @@ async function finalizeDirectUpload(request: Request) {
 
   if (!body.previewTempKey && !body.downloadKey) {
     return NextResponse.json({ error: "Add at least one preview or download file." }, { status: 400 });
+  }
+
+  const originalFileName = cleanString(body.originalFileName);
+  const fileHash = cleanString(body.fileHash);
+  const fileSize = getFileSize(body.fileSize);
+  const duplicate = await findDuplicateDownload(fileHash, originalFileName, fileSize);
+
+  if (duplicate) {
+    if (body.downloadKey) {
+      await deleteFileFromR2(body.downloadKey);
+    }
+
+    return NextResponse.json({ error: duplicateMessage(duplicate) }, { status: 409 });
   }
 
   let previewUrl: string | undefined;
@@ -131,7 +187,10 @@ async function finalizeDirectUpload(request: Request) {
     credits: getCategoryCreditCost(category),
     duration: cleanString(body.duration) || "0:00",
     tags: cleanTags(body.tags),
-    accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt"
+    accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt",
+    originalFileName,
+    fileSize,
+    fileHash
   });
 
   return NextResponse.json({
@@ -164,6 +223,9 @@ export async function POST(request: Request) {
     const category = getString(formData, "category");
     const previewFile = getFile(formData, "previewFile");
     const downloadFile = getFile(formData, "downloadFile");
+    const originalFileName = downloadFile?.name ?? "";
+    const fileSize = downloadFile?.size ?? null;
+    const fileHash = downloadFile ? await getFileHash(downloadFile) : "";
 
     if (!title || !category) {
       return NextResponse.json({ error: "Title and category are required." }, { status: 400 });
@@ -171,6 +233,12 @@ export async function POST(request: Request) {
 
     if (!previewFile && !downloadFile) {
       return NextResponse.json({ error: "Add at least one preview or download file." }, { status: 400 });
+    }
+
+    const duplicate = await findDuplicateDownload(fileHash, originalFileName, fileSize);
+
+    if (duplicate) {
+      return NextResponse.json({ error: duplicateMessage(duplicate) }, { status: 409 });
     }
 
     const baseSlug = slugifyFileName(title);
@@ -200,7 +268,10 @@ export async function POST(request: Request) {
       credits: getCategoryCreditCost(category),
       duration: getString(formData, "duration") || "0:00",
       tags: getTags(getString(formData, "tags")),
-      accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt"
+      accent: accents.includes(accent as (typeof accents)[number]) ? accent : "volt",
+      originalFileName,
+      fileSize,
+      fileHash
     });
 
     return NextResponse.json({

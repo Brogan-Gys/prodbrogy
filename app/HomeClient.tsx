@@ -1,19 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, CheckCircle2, ChevronDown, Disc3, Heart, Search, Sparkles } from "lucide-react";
+import { ArrowDownToLine, CheckCircle2, ChevronDown, Disc3, Heart, PackageOpen, Search, Sparkles } from "lucide-react";
+import { FreeKits } from "@/components/sections/FreeKits";
 import { Hero } from "@/components/sections/Hero";
 import { SoundLibrary } from "@/components/sections/SoundLibrary";
 import { CategoryRail } from "@/components/ui/CategoryRail";
 import { CreditMeter } from "@/components/ui/CreditMeter";
 import { Footer } from "@/components/ui/Footer";
+import { PreviewVolumeControl } from "@/components/ui/PreviewVolumeControl";
 import { SocialCreditBonus } from "@/components/ui/SocialCreditBonus";
 import { StatPill } from "@/components/ui/StatPill";
 import { SubmissionCallout } from "@/components/ui/SubmissionCallout";
 import { categories, type SoundAsset } from "@/lib/sounds";
+import type { FreeKit } from "@/lib/freeKits";
 
 type HomeClientProps = {
   sounds: SoundAsset[];
+  freeKits: FreeKit[];
 };
 
 const DOWNLOAD_HISTORY_KEY = "prodbrogy-download-history";
@@ -24,6 +28,13 @@ type LibraryView = "all" | "downloaded" | "favorites";
 type SortMode = "fresh" | "title" | "bpm";
 const LIVE_UPDATE_INTERVAL_MS = 30000;
 const SKELETON_SWAP_DELAY_MS = 500;
+const FREE_KITS_CATEGORY_ID = "free-kits";
+const freeKitsCategory = {
+  id: FREE_KITS_CATEGORY_ID,
+  label: "Free kits",
+  description: "Browse free downloads and bonus kits.",
+  icon: PackageOpen
+};
 
 function readStoredIds(key: string) {
   try {
@@ -51,7 +62,7 @@ function writeCachedSounds(sounds: SoundAsset[]) {
   }
 }
 
-export function HomeClient({ sounds }: HomeClientProps) {
+export function HomeClient({ sounds, freeKits }: HomeClientProps) {
   const [liveSounds, setLiveSounds] = useState(sounds);
   const [isRefreshingSounds, setIsRefreshingSounds] = useState(false);
   const soundSignatureRef = useRef(JSON.stringify(sounds));
@@ -162,6 +173,11 @@ export function HomeClient({ sounds }: HomeClientProps) {
     });
   };
   const hasActiveFilters = activeCategory !== "all" || libraryView !== "all" || query.trim().length > 0 || sortMode !== "fresh";
+  const isViewingFreeKits = activeCategory === FREE_KITS_CATEGORY_ID;
+  const libraryCategories = useMemo(
+    () => (freeKits.length > 0 ? [...categories, freeKitsCategory] : categories),
+    [freeKits.length]
+  );
   const clearFilters = () => {
     setActiveCategory("all");
     setLibraryView("all");
@@ -180,7 +196,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
         (libraryView === "favorites" && favoriteIds.includes(sound.id));
       const searchMatch =
         normalizedQuery.length === 0 ||
-        [sound.title, sound.mood, sound.bpm?.toString() ?? "any bpm", sound.tags.join(" ")]
+        [sound.title, sound.bpm?.toString() ?? "any bpm", sound.category]
           .join(" ")
           .toLowerCase()
           .includes(normalizedQuery);
@@ -214,7 +230,10 @@ export function HomeClient({ sounds }: HomeClientProps) {
             <StatPill icon={Sparkles} label="Fresh" value="Weekly" tone="coral" />
             <StatPill icon={ArrowDownToLine} label="Daily base" value="12 credits" tone="volt" />
           </div>
-          <CreditMeter />
+          <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-[220px_280px]">
+            <PreviewVolumeControl />
+            <CreditMeter />
+          </div>
         </div>
         {/*
         <SocialCreditBonus />
@@ -223,7 +242,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
 
         <div id="sound-files" className="grid gap-3 lg:grid-cols-[280px_1fr]">
           <aside className="hidden lg:sticky lg:top-5 lg:block lg:self-start">
-            <CategoryRail categories={categories} activeCategory={activeCategory} onSelectCategory={setActiveCategory} />
+            <CategoryRail categories={libraryCategories} activeCategory={activeCategory} onSelectCategory={setActiveCategory} />
           </aside>
 
           <div className="space-y-3">
@@ -249,7 +268,7 @@ export function HomeClient({ sounds }: HomeClientProps) {
                   className="h-10 w-full appearance-none border-2 border-ink bg-bone py-0 pl-2 pr-7 font-display text-[10px] font-black uppercase outline-none"
                   aria-label="Filter category"
                 >
-                  {categories.map((category) => (
+                  {libraryCategories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.label}
                     </option>
@@ -297,20 +316,26 @@ export function HomeClient({ sounds }: HomeClientProps) {
               ) : null}
 
               <div className="col-span-3 hidden h-8 items-center justify-center px-2 text-[11px] font-black uppercase text-ink/55 lg:col-span-1 lg:flex lg:h-10">
-                {filteredSounds.length} {filteredSounds.length === 1 ? "sound" : "sounds"}
+                {isViewingFreeKits
+                  ? `${freeKits.length} ${freeKits.length === 1 ? "kit" : "kits"}`
+                  : `${filteredSounds.length} ${filteredSounds.length === 1 ? "sound" : "sounds"}`}
               </div>
             </div>
 
-            <SoundLibrary
-              sounds={filteredSounds}
-              activeCategory={activeCategory}
-              libraryView={libraryView}
-              downloadedIds={downloadedIds}
-              favoriteIds={favoriteIds}
-              isRefreshing={isRefreshingSounds}
-              onDownloadRecorded={recordDownload}
-              onFavoriteToggle={toggleFavorite}
-            />
+            {isViewingFreeKits ? (
+              <FreeKits kits={freeKits} />
+            ) : (
+              <SoundLibrary
+                sounds={filteredSounds}
+                activeCategory={activeCategory}
+                libraryView={libraryView}
+                downloadedIds={downloadedIds}
+                favoriteIds={favoriteIds}
+                isRefreshing={isRefreshingSounds}
+                onDownloadRecorded={recordDownload}
+                onFavoriteToggle={toggleFavorite}
+              />
+            )}
           </div>
         </div>
       </section>

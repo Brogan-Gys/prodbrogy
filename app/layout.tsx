@@ -24,6 +24,14 @@ export const metadata: Metadata = {
   creator: "Prodbrogy",
   publisher: "Prodbrogy",
   category: "music",
+  icons: {
+    icon: [
+      { url: "/tab-icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon.png", sizes: "512x512", type: "image/png" }
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "512x512", type: "image/png" }]
+  },
   alternates: {
     canonical: "/"
   },
@@ -60,6 +68,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="color-scheme" content="light only" />
+        <meta name="supported-color-schemes" content="light" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
