@@ -115,7 +115,7 @@ a {
 }
 
 .volume-slider {
-  --volume-percent: 85%;
+  --volume-percent: 60%;
   height: 18px;
   appearance: none;
   cursor: pointer;
