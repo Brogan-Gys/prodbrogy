@@ -534,11 +534,11 @@ export function SoundRow({
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col justify-between gap-1.5 border-t-2 border-ink pt-1.5 lg:gap-2 lg:border-l-2 lg:border-t-0 lg:pl-2 lg:pt-0">
+        <div className="flex min-w-0 flex-row items-center justify-between gap-1.5 border-t-2 border-ink pt-1.5 lg:flex-col lg:items-stretch lg:justify-between lg:gap-2 lg:border-l-2 lg:border-t-0 lg:pl-2 lg:pt-0">
           <p className="min-w-0 truncate font-display text-sm font-black uppercase leading-none text-ink/65 lg:text-base">
             {typeLabels.get(sound.category) ?? sound.category}
           </p>
-          <div className="mt-auto flex min-w-0 items-center justify-end gap-1.5 lg:gap-2">
+          <div className="flex min-w-0 shrink-0 items-center justify-end gap-1.5 lg:mt-auto lg:gap-2">
             <button
               type="button"
               onClick={() => onFavoriteToggle?.(sound)}
