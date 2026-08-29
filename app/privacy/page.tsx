@@ -50,13 +50,9 @@ export default function PrivacyPage() {
                 account, no tracking or advertising cookies.
               </li>
               <li>
-                <span className="font-bold">When you sign up with email</span> &mdash; your email address and a
-                display name derived from it.
-              </li>
-              <li>
-                <span className="font-bold">When you sign in with Google</span> &mdash; your email address and your
-                Google profile name. Nothing else from your Google account is requested, and your Google password is
-                never seen by this site.
+                <span className="font-bold">When you sign in</span> &mdash; Google is the only sign-in method, and all
+                it shares is your email address and your Google profile name. Nothing else from your Google account is
+                requested, and your Google password is never seen by this site. No password is stored here at all.
               </li>
               <li>
                 <span className="font-bold">While using your account</span> &mdash; which sounds you download, which

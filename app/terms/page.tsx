@@ -49,7 +49,7 @@ export default function TermsPage() {
             <p className="font-display text-xs font-black uppercase text-ink/55">Accounts</p>
             <ul className="mt-2 space-y-1.5">
               <li>You need an account to download. Browsing and previewing are open to everyone.</li>
-              <li>Give a real email address and keep your login details to yourself.</li>
+              <li>Accounts are created by signing in with Google. There is no separate password to set or share.</li>
               <li>One account per person. Extra accounts made to farm credits will be removed.</li>
               <li>
                 You can delete your account at any time by emailing{" "}
