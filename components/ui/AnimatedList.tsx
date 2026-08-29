@@ -15,7 +15,9 @@ type AnimatedItemProps = {
 
 function AnimatedItem({ children, delay = 0, index, onMouseEnter, onClick, className }: AnimatedItemProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { amount: 0.5, once: false });
+  // `once` + a low threshold: rows fade in one time only. Re-animating on every
+  // intersection change made rows flicker while scrolling the library.
+  const inView = useInView(ref, { amount: 0.1, once: true });
 
   return (
     <motion.div
@@ -23,9 +25,9 @@ function AnimatedItem({ children, delay = 0, index, onMouseEnter, onClick, class
       data-index={index}
       onMouseEnter={onMouseEnter}
       onClick={onClick}
-      initial={{ scale: 0.7, opacity: 0 }}
-      animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.7, opacity: 0 }}
-      transition={{ duration: 0.2, delay }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+      transition={{ duration: 0.25, delay, ease: "easeOut" }}
       className={cn("mb-3 cursor-pointer last:mb-0", className)}
     >
       {children}
@@ -87,8 +89,9 @@ export default function AnimatedList<T = string>({
   const listRef = useRef<HTMLDivElement>(null);
   const [selectedIndex, setSelectedIndex] = useState(initialSelectedIndex);
   const [keyboardNav, setKeyboardNav] = useState(false);
-  const [topGradientOpacity, setTopGradientOpacity] = useState(0);
-  const [bottomGradientOpacity, setBottomGradientOpacity] = useState(0);
+  const topGradientRef = useRef<HTMLDivElement>(null);
+  const bottomGradientRef = useRef<HTMLDivElement>(null);
+  const scrollFrameRef = useRef<number | null>(null);
   const [maxHeight, setMaxHeight] = useState<number | null>(null);
   const [minHeight, setMinHeight] = useState<number | null>(null);
 
@@ -104,18 +107,46 @@ export default function AnimatedList<T = string>({
     [onItemSelect]
   );
 
+  // Written straight to the DOM inside one rAF per frame. Driving these through
+  // React state re-rendered every row on every scroll event, which is what made
+  // the library scroll feel flickery.
   const handleScroll = useCallback(() => {
-    const container = listRef.current;
-
-    if (!container) {
+    if (scrollFrameRef.current !== null) {
       return;
     }
 
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    setTopGradientOpacity(Math.min(scrollTop / 50, 1));
-    const bottomDistance = scrollHeight - (scrollTop + clientHeight);
-    setBottomGradientOpacity(scrollHeight <= clientHeight ? 0 : Math.min(bottomDistance / 50, 1));
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollFrameRef.current = null;
+
+      const container = listRef.current;
+
+      if (!container) {
+        return;
+      }
+
+      const { scrollTop, scrollHeight, clientHeight } = container;
+
+      if (topGradientRef.current) {
+        topGradientRef.current.style.opacity = String(Math.min(scrollTop / 50, 1));
+      }
+
+      if (bottomGradientRef.current) {
+        const bottomDistance = scrollHeight - (scrollTop + clientHeight);
+        bottomGradientRef.current.style.opacity = String(
+          scrollHeight <= clientHeight ? 0 : Math.min(bottomDistance / 50, 1)
+        );
+      }
+    });
   }, []);
+
+  useEffect(
+    () => () => {
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+    },
+    []
+  );
 
   useLayoutEffect(() => {
     const container = listRef.current;
@@ -258,7 +289,7 @@ export default function AnimatedList<T = string>({
           ? items.map((item, index) => (
               <AnimatedItem
                 key={getItemKey?.(item, index) ?? index}
-                delay={0.1}
+                delay={0}
                 index={index}
                 onMouseEnter={() => handleItemMouseEnter(index)}
                 onClick={() => handleItemClick(item, index)}
@@ -284,12 +315,14 @@ export default function AnimatedList<T = string>({
       {showGradients ? (
         <>
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-bone via-bone/80 to-transparent transition-opacity duration-300 ease-out"
-            style={{ opacity: topGradientOpacity }}
+            ref={topGradientRef}
+            className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-bone via-bone/80 to-transparent"
+            style={{ opacity: 0 }}
           />
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-bone via-bone/80 to-transparent transition-opacity duration-300 ease-out"
-            style={{ opacity: bottomGradientOpacity }}
+            ref={bottomGradientRef}
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-bone via-bone/80 to-transparent"
+            style={{ opacity: 0 }}
           />
         </>
       ) : null}

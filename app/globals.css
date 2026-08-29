@@ -89,6 +89,10 @@ a {
   scrollbar-gutter: stable;
   scrollbar-color: #11110f #ffffff;
   scrollbar-width: thin;
+  /* Keep momentum scrolling inside the list instead of chaining to the page,
+     which is what makes nested scrolling stutter on iOS. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sound-library-scroll::-webkit-scrollbar {

@@ -34,14 +34,19 @@ export function Hero({ soundCount = 0 }: HeroProps) {
   };
 
   useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     const ctx = gsap.context(() => {
-      gsap.from("[data-hero-item]", {
-        y: 42,
-        opacity: 0,
-        duration: 0.9,
-        ease: "power3.out",
-        stagger: 0.09
-      });
+      if (!prefersReducedMotion) {
+        gsap.from("[data-hero-item]", {
+          y: 42,
+          opacity: 0,
+          duration: 0.9,
+          ease: "power3.out",
+          stagger: 0.09,
+          clearProps: "opacity,transform"
+        });
+      }
 
       gsap.to("[data-orbit]", {
         rotate: 360,
@@ -52,7 +57,20 @@ export function Hero({ soundCount = 0 }: HeroProps) {
       });
     }, heroRef);
 
-    return () => ctx.revert();
+    // Failsafe: gsap applies the "from" state (opacity 0) synchronously, but its
+    // ticker is paused while the tab is backgrounded — on mobile Safari that can
+    // leave the hero copy invisible. Force the end state well after the tween.
+    const revealTimer = window.setTimeout(() => {
+      heroRef.current?.querySelectorAll<HTMLElement>("[data-hero-item]").forEach((item) => {
+        item.style.opacity = "";
+        item.style.transform = "";
+      });
+    }, 2500);
+
+    return () => {
+      window.clearTimeout(revealTimer);
+      ctx.revert();
+    };
   }, []);
 
   useEffect(() => {
@@ -72,7 +90,7 @@ export function Hero({ soundCount = 0 }: HeroProps) {
   return (
     <section
       ref={heroRef}
-      className="relative mx-auto flex min-h-[86vh] w-full max-w-7xl flex-col justify-between overflow-hidden px-4 py-5 sm:px-6 lg:px-8"
+      className="relative mx-auto flex min-h-[86svh] w-full max-w-7xl flex-col justify-between overflow-hidden px-4 py-5 sm:px-6 lg:px-8"
     >
       <nav className="relative z-10 flex items-center justify-between border-2 border-ink bg-bone/85 px-3 py-3 backdrop-blur md:px-5">
         <div className="flex items-center gap-2">
