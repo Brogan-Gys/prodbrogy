@@ -94,3 +94,50 @@ export async function getFreeKits(options: SoundFetchOptions = fetchOptions): Pr
     return [];
   }
 }
+
+const soundByIdQuery = `*[_type == "soundAsset" && _id == $id][0] {
+  "id": _id,
+  "createdAt": _createdAt,
+  title,
+  category,
+  "producerName": coalesce(producerName, ""),
+  bpm,
+  "mood": coalesce(mood, ""),
+  "credits": coalesce(credits, 1),
+  "duration": coalesce(duration, "0:00"),
+  "tags": coalesce(tags, []),
+  "accent": coalesce(accent, "volt"),
+  previewUrl,
+  downloadUrl
+}`;
+
+/**
+ * Authoritative lookup used by the download route. The client sends only a
+ * sound id; price and file URL are always resolved here so neither can be
+ * tampered with in the request.
+ */
+export async function getSoundById(id: string): Promise<SoundAsset | null> {
+  if (!hasSanityConfig || !id) {
+    return null;
+  }
+
+  try {
+    const sound = await withTimeout(
+      sanityClient.fetch<SoundAsset | null>(soundByIdQuery, { id }, { cache: "no-store" }),
+      SOUND_FETCH_TIMEOUT_MS
+    );
+
+    if (!sound) {
+      return null;
+    }
+
+    return {
+      ...sound,
+      credits: getCategoryCreditCost(sound.category, sound.credits),
+      previewUrl: getPublicAssetUrl(sound.previewUrl),
+      downloadUrl: getPublicAssetUrl(sound.downloadUrl)
+    };
+  } catch {
+    return null;
+  }
+}

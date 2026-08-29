@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDownToLine, CheckCircle2, ChevronDown, Disc3, Heart, PackageOpen, Search, Sparkles } from "lucide-react";
+import { useAccount } from "@/components/auth/AccountProvider";
 import { FreeKits } from "@/components/sections/FreeKits";
 import { Hero } from "@/components/sections/Hero";
 import { SoundLibrary } from "@/components/sections/SoundLibrary";
@@ -20,8 +21,6 @@ type HomeClientProps = {
   freeKits: FreeKit[];
 };
 
-const DOWNLOAD_HISTORY_KEY = "prodbrogy-download-history";
-const FAVORITE_SOUNDS_KEY = "prodbrogy-favorite-sounds";
 const SOUNDS_CACHE_KEY = "prodbrogy-sounds-cache";
 
 type LibraryView = "all" | "downloaded" | "favorites";
@@ -35,15 +34,6 @@ const freeKitsCategory = {
   description: "Browse free downloads and bonus kits.",
   icon: PackageOpen
 };
-
-function readStoredIds(key: string) {
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(key) || "[]") as string[];
-    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : [];
-  } catch {
-    return [];
-  }
-}
 
 function readCachedSounds(): SoundAsset[] | null {
   try {
@@ -70,13 +60,7 @@ export function HomeClient({ sounds, freeKits }: HomeClientProps) {
   const [query, setQuery] = useState("");
   const [libraryView, setLibraryView] = useState<LibraryView>("all");
   const [sortMode, setSortMode] = useState<SortMode>("fresh");
-  const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
-  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    setDownloadedIds(readStoredIds(DOWNLOAD_HISTORY_KEY));
-    setFavoriteIds(readStoredIds(FAVORITE_SOUNDS_KEY));
-  }, []);
+  const { downloadedIds, favoriteIds, isSignedIn, openSignIn, refresh: refreshAccount } = useAccount();
 
   useEffect(() => {
     if (sounds.length > 0) {
@@ -158,19 +142,25 @@ export function HomeClient({ sounds, freeKits }: HomeClientProps) {
     };
   }, []);
 
-  const recordDownload = (sound: SoundAsset) => {
-    setDownloadedIds((current) => {
-      const next = Array.from(new Set([...current, sound.id]));
-      window.localStorage.setItem(DOWNLOAD_HISTORY_KEY, JSON.stringify(next));
-      return next;
-    });
+  // Both of these now live server-side; re-reading the account is what updates
+  // the credit meter, the download badge, and the stash counts.
+  const recordDownload = () => {
+    void refreshAccount();
   };
-  const toggleFavorite = (sound: SoundAsset) => {
-    setFavoriteIds((current) => {
-      const next = current.includes(sound.id) ? current.filter((id) => id !== sound.id) : [...current, sound.id];
-      window.localStorage.setItem(FAVORITE_SOUNDS_KEY, JSON.stringify(next));
-      return next;
+
+  const toggleFavorite = async (sound: SoundAsset) => {
+    if (!isSignedIn) {
+      openSignIn();
+      return;
+    }
+
+    await fetch("/api/favorites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ soundId: sound.id })
     });
+
+    await refreshAccount();
   };
   const hasActiveFilters = activeCategory !== "all" || libraryView !== "all" || query.trim().length > 0 || sortMode !== "fresh";
   const isViewingFreeKits = activeCategory === FREE_KITS_CATEGORY_ID;
@@ -336,6 +326,7 @@ export function HomeClient({ sounds, freeKits }: HomeClientProps) {
                 isRefreshing={isRefreshingSounds}
                 onDownloadRecorded={recordDownload}
                 onFavoriteToggle={toggleFavorite}
+                onSignInRequired={openSignIn}
               />
             )}
           </div>

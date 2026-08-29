@@ -3,13 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDownToLine, CheckCircle2, Heart, Loader2, Pause, Play, X } from "lucide-react";
 import {
-  CREDIT_STORAGE_KEY,
-  getDailyCreditTotal,
-  getDefaultCreditState,
-  normalizeCreditState,
-  type CreditState
-} from "@/lib/credits";
-import {
   DEFAULT_PREVIEW_VOLUME,
   PREVIEW_VOLUME_CHANGE_EVENT,
   PREVIEW_VOLUME_STORAGE_KEY,
@@ -24,6 +17,7 @@ type SoundRowProps = {
   isFavorited?: boolean;
   onDownloadRecorded?: (sound: SoundAsset) => void;
   onFavoriteToggle?: (sound: SoundAsset) => void;
+  onSignInRequired?: () => void;
 };
 
 type ActivePreview = {
@@ -39,7 +33,6 @@ const accentClass = {
 };
 
 const audioFilePattern = /\.(mp3|wav|m4a|ogg|flac|webm)(\?|#|$)/i;
-const downloadableFilePattern = /\.(zip|rar|7z|mp3|wav|m4a|ogg|flac|webm|mid|midi)(\?|#|$)/i;
 let activePreview: ActivePreview | null = null;
 const typeLabels = new Map([
   ["midi", "MIDI"],
@@ -75,10 +68,6 @@ function getMegaEmbedUrl(value: string) {
   return `https://mega.nz/embed/${match[1]}${match[2] ?? ""}`;
 }
 
-function isMegaUrl(value: string) {
-  return getIframeSrc(value).includes("mega.nz/");
-}
-
 function slugifyDownloadName(value: string) {
   return (
     value
@@ -88,8 +77,16 @@ function slugifyDownloadName(value: string) {
   );
 }
 
-function getSiteDownloadUrl(value: string, sound: SoundAsset) {
-  const cleanName = slugifyDownloadName(
+/** Prefer the filename the server chose; fall back to building one locally. */
+function getDownloadFileName(response: Response, sound: SoundAsset) {
+  const disposition = response.headers.get("content-disposition") || "";
+  const match = disposition.match(/filename="([^"]+)"/i);
+
+  if (match) {
+    return match[1];
+  }
+
+  return slugifyDownloadName(
     [
       "@prodbrogy",
       sound.producerName ? `x-${sound.producerName}` : "",
@@ -99,8 +96,6 @@ function getSiteDownloadUrl(value: string, sound: SoundAsset) {
       .filter(Boolean)
       .join("-")
   );
-
-  return `/api/download?url=${encodeURIComponent(value)}&name=${encodeURIComponent(cleanName)}`;
 }
 
 function getPreviewLimit(category: string) {
@@ -161,10 +156,12 @@ export function SoundRow({
   isDownloaded = false,
   isFavorited = false,
   onDownloadRecorded,
-  onFavoriteToggle
+  onFavoriteToggle,
+  onSignInRequired
 }: SoundRowProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [embedUrl, setEmbedUrl] = useState("");
   const [, setNotice] = useState("");
   const [playhead, setPlayhead] = useState(0);
@@ -411,56 +408,76 @@ export function SoundRow({
       });
   };
 
-  const handleDownload = () => {
+  /**
+   * The credit check now happens server-side in /api/download, so this reads
+   * the response instead of trusting a local balance. The file comes back as a
+   * stream we turn into a blob download; externally hosted sounds come back as
+   * a JSON redirect instead.
+   */
+  const handleDownload = async () => {
     if (!sound.downloadUrl) {
       flashNotice("Download coming soon");
       return;
     }
 
-    let nextUsed = 0;
-    let state = getDefaultCreditState();
+    if (isDownloading) {
+      return;
+    }
 
-    if (!isDownloaded) {
-      try {
-        const stored = window.localStorage.getItem(CREDIT_STORAGE_KEY);
-        state = normalizeCreditState(stored ? (JSON.parse(stored) as CreditState) : getDefaultCreditState());
-      } catch {
-        state = getDefaultCreditState();
-      }
+    setIsDownloading(true);
 
-      nextUsed = state.used + sound.credits;
+    try {
+      const response = await fetch(`/api/download?soundId=${encodeURIComponent(sound.id)}`, {
+        cache: "no-store"
+      });
 
-      if (nextUsed > getDailyCreditTotal(state)) {
-        flashNotice("Out of daily credits");
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { reason?: string } | null;
+
+        if (payload?.reason === "unauthenticated") {
+          onSignInRequired?.();
+          flashNotice("Sign in to download");
+        } else if (payload?.reason === "insufficient_credits") {
+          flashNotice("Out of daily credits");
+        } else {
+          flashNotice("Download unavailable");
+        }
+
         return;
       }
 
-      window.localStorage.setItem(CREDIT_STORAGE_KEY, JSON.stringify({ ...state, used: nextUsed }));
-      window.dispatchEvent(new Event("credits:changed"));
+      const contentType = response.headers.get("content-type") || "";
+
+      if (contentType.includes("application/json")) {
+        const payload = (await response.json()) as { redirect?: string };
+
+        if (payload.redirect) {
+          window.open(payload.redirect, "_blank", "noopener,noreferrer");
+          flashNotice("Download opened");
+        }
+
+        onDownloadRecorded?.(sound);
+        return;
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = objectUrl;
+      link.download = getDownloadFileName(response, sound);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+
+      flashNotice("Download starting");
+      onDownloadRecorded?.(sound);
+    } catch {
+      flashNotice("Download unavailable");
+    } finally {
+      setIsDownloading(false);
     }
-
-    onDownloadRecorded?.(sound);
-    const downloadUrl = getIframeSrc(sound.downloadUrl).trim();
-    const isDirectFile = downloadableFilePattern.test(downloadUrl);
-
-    flashNotice(
-      isDirectFile || isDownloaded ? "Download starting" : `Reserved ${sound.credits} credit${sound.credits === 1 ? "" : "s"}`
-    );
-
-    const link = document.createElement("a");
-    link.href = isDirectFile ? getSiteDownloadUrl(downloadUrl, sound) : downloadUrl;
-    link.rel = "noopener";
-
-    if (isDirectFile) {
-      link.download = "";
-    } else if (isMegaUrl(downloadUrl)) {
-      link.target = "_blank";
-      flashNotice("Mega download opened");
-    }
-
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
   };
 
   return (
@@ -554,11 +571,16 @@ export function SoundRow({
             <button
               type="button"
               onClick={handleDownload}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center gap-1.5 border-2 border-ink bg-ink font-display text-[11px] font-black uppercase text-bone transition hover:-translate-y-0.5 lg:h-9 lg:w-auto lg:px-2.5"
+              disabled={isDownloading}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center gap-1.5 border-2 border-ink bg-ink font-display text-[11px] font-black uppercase text-bone transition hover:-translate-y-0.5 disabled:opacity-60 lg:h-9 lg:w-auto lg:px-2.5"
               aria-label={`Download ${sound.title}`}
             >
-              <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden />
-              <span className="hidden lg:inline">Download</span>
+              {isDownloading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              ) : (
+                <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden />
+              )}
+              <span className="hidden lg:inline">{isDownloading ? "Wait" : "Download"}</span>
             </button>
           </div>
         </div>

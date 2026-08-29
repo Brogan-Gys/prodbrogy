@@ -15,6 +15,7 @@ type SoundLibraryProps = {
   isRefreshing?: boolean;
   onDownloadRecorded?: (sound: SoundAsset) => void;
   onFavoriteToggle?: (sound: SoundAsset) => void;
+  onSignInRequired?: () => void;
 };
 
 const DESKTOP_VISIBLE_ROWS = 7;
@@ -36,7 +37,8 @@ export function SoundLibrary({
   favoriteIds = [],
   isRefreshing = false,
   onDownloadRecorded,
-  onFavoriteToggle
+  onFavoriteToggle,
+  onSignInRequired
 }: SoundLibraryProps) {
   const [visibleRowLimit, setVisibleRowLimit] = useState(MOBILE_VISIBLE_ROWS);
 
@@ -93,6 +95,7 @@ export function SoundLibrary({
               isFavorited={favoriteIds.includes(sound.id)}
               onDownloadRecorded={onDownloadRecorded}
               onFavoriteToggle={onFavoriteToggle}
+              onSignInRequired={onSignInRequired}
             />
           )}
         />
