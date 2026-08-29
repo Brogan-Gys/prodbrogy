@@ -29,8 +29,8 @@ export default function TermsPage() {
 
         <div className="mt-6 space-y-6 border-2 border-ink bg-white p-5 text-sm leading-6 shadow-hard sm:p-7 sm:text-base">
           <p className="border-2 border-ink bg-coral px-3 py-2 font-bold">
-            These sounds are <span className="uppercase">not royalty-free.</span> How you may use them, and the splits
-            owed on any placement, are set out on the{" "}
+            <span className="uppercase">Phrases and one shots are royalty-free. MIDI, starters, and loops are not.</span>{" "}
+            How you may use each, and the splits owed on any placement, are set out on the{" "}
             <Link href="/license" className="underline underline-offset-2">
               License &amp; Splits
             </Link>{" "}
@@ -79,12 +79,13 @@ export default function TermsPage() {
               <Link href="/license" className="underline underline-offset-2">
                 License &amp; Splits
               </Link>{" "}
-              page. Ownership of the sounds stays with @prodbrogy. You may not:
+              page. Phrases and one shots are royalty-free, so you can release with them freely. MIDI, starters, and
+              loops require you to inform @prodbrogy before any placement and to agree the split. Ownership of the
+              sounds stays with @prodbrogy in every case. Whatever the category, you may not:
             </p>
             <ul className="mt-2 space-y-1.5">
               <li>Resell, redistribute, or re-upload the files, on their own or in a pack.</li>
               <li>Claim them as your own sounds or register them with a content ID system.</li>
-              <li>Use them in a commercial release without informing @prodbrogy first and agreeing the split.</li>
               <li>Use them to train a machine learning or AI model.</li>
             </ul>
           </div>

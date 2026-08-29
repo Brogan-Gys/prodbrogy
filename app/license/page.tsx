@@ -15,6 +15,14 @@ const contactLinks = [
   { label: "Email", handle: "prodbrogy@gmail.com", href: "mailto:prodbrogy@gmail.com", Icon: Mail }
 ];
 
+const licenseRows = [
+  { category: "Phrases", terms: "Royalty-free. No split, nothing to clear.", free: true },
+  { category: "One shots", terms: "Royalty-free. No split, nothing to clear.", free: true },
+  { category: "MIDI", terms: "Not royalty-free. Inform me first, split applies.", free: false },
+  { category: "Starters", terms: "Not royalty-free. Inform me first, split applies.", free: false },
+  { category: "Loops", terms: "Not royalty-free. Inform me first, split applies.", free: false }
+];
+
 export default function LicensePage() {
   return (
     <main className="grain min-h-screen bg-bone text-ink">
@@ -30,19 +38,52 @@ export default function LicensePage() {
         <h1 className="mt-6 font-display text-3xl font-black uppercase leading-none sm:text-4xl">License &amp; Splits</h1>
 
         <div className="mt-6 space-y-6 border-2 border-ink bg-white p-5 text-sm leading-6 shadow-hard sm:p-7 sm:text-base">
+          <p className="border-2 border-ink bg-volt px-3 py-2 font-bold">
+            <span className="uppercase">Phrases and one shots are royalty-free.</span> Use them in anything, commercial
+            or not &mdash; no split, nothing to clear, no need to tell me. A credit is always appreciated.
+          </p>
+
           <p className="border-2 border-ink bg-coral px-3 py-2 font-bold">
-            These sounds are <span className="uppercase">not royalty-free.</span> Any placement &mdash; indie or major &mdash; I
-            (@prodbrogy) need to be informed first. Reach me through the contacts below.
+            <span className="uppercase">MIDI, starters, and loops are not royalty-free.</span> Any placement &mdash;
+            indie or major &mdash; I (@prodbrogy) need to be informed first, and a split applies. Reach me through the
+            contacts below.
           </p>
 
           <div>
+            <p className="font-display text-xs font-black uppercase text-ink/55">What applies to what</p>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr>
+                    <th className="border-2 border-ink bg-bone px-3 py-2 font-display text-[11px] font-black uppercase">
+                      Category
+                    </th>
+                    <th className="border-2 border-ink bg-bone px-3 py-2 font-display text-[11px] font-black uppercase">
+                      Terms
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {licenseRows.map(({ category, terms, free }) => (
+                    <tr key={category}>
+                      <td className="border-2 border-ink px-3 py-2 font-bold">{category}</td>
+                      <td className={`border-2 border-ink px-3 py-2 ${free ? "bg-volt/30" : "bg-coral/20"}`}>{terms}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
             <p className="font-display text-xs font-black uppercase text-ink/55">BeatStars splits</p>
+            <p className="mt-2">These apply to MIDI, starters, and loops only.</p>
             <ul className="mt-2 space-y-1.5">
               <li>
-                <span className="font-bold">Loop made by just me</span> &mdash; 50% you &amp; 50% me.
+                <span className="font-bold">Made by just me</span> &mdash; 50% you &amp; 50% me.
               </li>
               <li>
-                <span className="font-bold">Melody made by multiple people</span> &mdash; split equally between everyone
+                <span className="font-bold">Made by multiple people</span> &mdash; split equally between everyone
                 involved (e.g. 3 contributors = 33.33% each).
               </li>
               <li>
