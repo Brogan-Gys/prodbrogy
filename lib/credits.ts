@@ -23,9 +23,14 @@ export function getTodayKey() {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
+/**
+ * Counts down to the next credit reset. Must be UTC midnight, not local:
+ * credit_day_start() in the database truncates in UTC, so a local-midnight
+ * countdown would hit zero hours early for anyone east or west of UTC.
+ */
 export function getCreditResetCountdown(now = new Date()) {
-  const resetAt = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const totalMinutes = Math.max(0, Math.ceil((resetAt.getTime() - now.getTime()) / 60000));
+  const resetAt = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  const totalMinutes = Math.max(0, Math.ceil((resetAt - now.getTime()) / 60000));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
