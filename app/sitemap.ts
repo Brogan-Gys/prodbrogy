@@ -8,6 +8,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1
-    }
+    },
+    ...["/license", "/privacy", "/terms"].map((path) => ({
+      url: `${siteConfig.url}${path}`,
+      lastModified: new Date(),
+      changeFrequency: "yearly" as const,
+      priority: 0.3
+    }))
   ];
 }

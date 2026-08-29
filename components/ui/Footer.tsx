@@ -2,6 +2,12 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { socialLinks } from "@/lib/socials";
 
+const legalLinks = [
+  { href: "/license", label: "License & Splits" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" }
+];
+
 export function Footer() {
   return (
     <footer id="site-footer" className="border-t-2 border-ink bg-bone px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
@@ -9,12 +15,17 @@ export function Footer() {
         <div>
           <p className="font-display text-base font-black uppercase leading-none sm:text-lg">Prodbrogy</p>
           <p className="mt-1 text-xs font-bold uppercase text-ink/55">Sound supply</p>
-          <Link
-            href="/license"
-            className="mt-2 inline-block text-xs font-bold uppercase text-ink/55 underline underline-offset-2 transition hover:text-ink"
-          >
-            License &amp; Splits
-          </Link>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+            {legalLinks.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-xs font-bold uppercase text-ink/55 underline underline-offset-2 transition hover:text-ink"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-wrap justify-end gap-1.5 sm:gap-2">
