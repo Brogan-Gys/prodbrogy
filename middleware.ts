@@ -24,7 +24,17 @@ export async function middleware(request: NextRequest) {
 
   // Refreshes an expired session and writes the rotated cookies onto the
   // response. Without this, sessions silently expire on the server.
-  await supabase.auth.getUser();
+  try {
+    const getUserPromise = supabase.auth.getUser();
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("supabase middleware timeout")), 2500)
+    );
+    await Promise.race([getUserPromise, timeout]);
+  } catch (err) {
+    // Don't block the request if Supabase is slow/unreachable.
+    // Proceed with the response so routing/middleware doesn't time out.
+    // (Logs may not appear in all Edge environments.)
+  }
 
   return response;
 }
