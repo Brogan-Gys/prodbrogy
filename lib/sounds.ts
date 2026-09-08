@@ -1,5 +1,9 @@
 import { Boxes, Flame, Layers3, Music2, Piano, type LucideIcon } from "lucide-react";
 
+/** Rows rendered from the server HTML. Enough to fill the library viewport
+ *  twice over, small enough to keep the initial document light. */
+export const INITIAL_SOUND_PAGE_SIZE = 24;
+
 export type SoundCategory = {
   id: string;
   label: string;

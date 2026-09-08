@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import AnimatedList from "@/components/ui/AnimatedList";
 import { SoundRow } from "@/components/ui/SoundRow";
 import { SoundLibrarySkeleton } from "@/components/ui/SoundRowSkeleton";
@@ -13,6 +14,8 @@ type SoundLibraryProps = {
   downloadedIds?: string[];
   favoriteIds?: string[];
   isRefreshing?: boolean;
+  /** The rest of the catalogue is still arriving in the background. */
+  isLoadingMore?: boolean;
   onDownloadRecorded?: (sound: SoundAsset) => void;
   onFavoriteToggle?: (sound: SoundAsset) => void;
   onSignInRequired?: () => void;
@@ -36,6 +39,7 @@ export function SoundLibrary({
   downloadedIds = [],
   favoriteIds = [],
   isRefreshing = false,
+  isLoadingMore = false,
   onDownloadRecorded,
   onFavoriteToggle,
   onSignInRequired
@@ -81,6 +85,7 @@ export function SoundLibrary({
           displayScrollbar={true}
           maxVisibleItems={visibleRowLimit}
           minVisibleItems={visibleRowLimit}
+          chunkSize={visibleRowLimit * 2}
           getItemKey={(sound) => sound.id}
           emptyState={
             <div className="border-2 border-ink bg-white p-6 text-center shadow-hard sm:p-8">
@@ -99,6 +104,13 @@ export function SoundLibrary({
             />
           )}
         />
+      ) : null}
+
+      {isLoadingMore && !isRefreshing ? (
+        <p className="flex items-center justify-center gap-2 border-2 border-ink bg-white px-3 py-2 font-display text-[10px] font-black uppercase text-ink/55">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          Loading the rest of the library
+        </p>
       ) : null}
     </>
   );

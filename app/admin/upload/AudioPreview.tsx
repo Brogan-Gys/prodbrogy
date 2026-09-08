@@ -62,7 +62,7 @@ export function AudioPreview({ source, label }: AudioPreviewProps) {
         type="button"
         onClick={toggle}
         aria-label={playing ? "Pause preview" : `Play preview${label ? ` of ${label}` : ""}`}
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center border-2 border-ink bg-cyan shadow-hard transition hover:-translate-y-0.5"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center border-2 border-ink bg-cyan text-stamp shadow-hard transition hover:-translate-y-0.5"
       >
         {playing ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
       </button>

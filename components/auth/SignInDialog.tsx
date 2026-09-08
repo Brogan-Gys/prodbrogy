@@ -42,7 +42,7 @@ export function SignInDialog() {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/80 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-scrim/80 p-4">
       <div className="w-full max-w-md border-2 border-ink bg-bone p-4 shadow-hard sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
@@ -65,7 +65,7 @@ export function SignInDialog() {
           type="button"
           onClick={handleGoogle}
           disabled={isBusy}
-          className="flex h-12 w-full items-center justify-center gap-2 border-2 border-ink bg-white font-display text-sm font-black uppercase shadow-[4px_4px_0_#11110f] transition hover:-translate-y-0.5 disabled:opacity-60"
+          className="flex h-12 w-full items-center justify-center gap-2 border-2 border-ink bg-white font-display text-sm font-black uppercase shadow-hard-sm transition hover:-translate-y-0.5 disabled:opacity-60"
         >
           {isBusy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <LogIn className="h-4 w-4" aria-hidden />}
           Continue with Google

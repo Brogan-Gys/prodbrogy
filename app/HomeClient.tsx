@@ -18,6 +18,8 @@ import type { FreeKit } from "@/lib/freeKits";
 
 type HomeClientProps = {
   sounds: SoundAsset[];
+  /** Size of the whole catalogue, so the client knows how much is still to come. */
+  totalSounds?: number;
   freeKits: FreeKit[];
 };
 
@@ -25,7 +27,10 @@ const SOUNDS_CACHE_KEY = "prodbrogy-sounds-cache";
 
 type LibraryView = "all" | "downloaded" | "favorites";
 type SortMode = "fresh" | "title" | "bpm";
-const LIVE_UPDATE_INTERVAL_MS = 30000;
+// The catalogue changes on the order of once a week, so there is no polling.
+// A revalidation only runs when the tab regains focus, and at most this often;
+// it is a conditional request, so an unchanged catalogue answers 304 (no body).
+const REVALIDATE_AFTER_MS = 5 * 60 * 1000;
 const SKELETON_SWAP_DELAY_MS = 500;
 const FREE_KITS_CATEGORY_ID = "free-kits";
 const freeKitsCategory = {
@@ -52,93 +57,140 @@ function writeCachedSounds(sounds: SoundAsset[]) {
   }
 }
 
-export function HomeClient({ sounds, freeKits }: HomeClientProps) {
+/** Merges a fetched batch into the list, keeping newest-first order and
+ *  dropping any duplicate the server and the background fetch both returned. */
+function mergeSounds(current: SoundAsset[], incoming: SoundAsset[]): SoundAsset[] {
+  const seen = new Set(current.map((sound) => sound.id));
+
+  return [...current, ...incoming.filter((sound) => !seen.has(sound.id))];
+}
+
+/** Defers work until the browser is idle so the background load never competes
+ *  with hydration or the first interaction. */
+function whenIdle(callback: () => void) {
+  if (typeof window.requestIdleCallback === "function") {
+    const handle = window.requestIdleCallback(callback, { timeout: 2000 });
+    return () => window.cancelIdleCallback(handle);
+  }
+
+  const handle = window.setTimeout(callback, 200);
+  return () => window.clearTimeout(handle);
+}
+
+export function HomeClient({ sounds, totalSounds = sounds.length, freeKits }: HomeClientProps) {
   const [liveSounds, setLiveSounds] = useState(sounds);
+  const [isLoadingRest, setIsLoadingRest] = useState(sounds.length < totalSounds);
   const [isRefreshingSounds, setIsRefreshingSounds] = useState(false);
-  const soundSignatureRef = useRef(JSON.stringify(sounds));
+  const etagRef = useRef<string | null>(null);
+  const lastCheckedRef = useRef(Date.now());
   const [activeCategory, setActiveCategory] = useState("all");
   const [query, setQuery] = useState("");
   const [libraryView, setLibraryView] = useState<LibraryView>("all");
   const [sortMode, setSortMode] = useState<SortMode>("fresh");
   const { downloadedIds, favoriteIds, isSignedIn, openSignIn, refresh: refreshAccount } = useAccount();
 
+  // Back-navigation and empty server responses fall back to the last good list
+  // so the library is never blank while the network catches up.
   useEffect(() => {
     if (sounds.length > 0) {
-      writeCachedSounds(sounds);
       return;
     }
 
     const cached = readCachedSounds();
+
     if (cached && cached.length > 0) {
-      soundSignatureRef.current = JSON.stringify(cached);
       setLiveSounds(cached);
+      setIsLoadingRest(false);
     }
   }, [sounds]);
 
+  // One background request for everything past the first page. Runs once, when
+  // the browser is idle — not on a timer.
   useEffect(() => {
+    if (sounds.length === 0 || sounds.length >= totalSounds) {
+      setIsLoadingRest(false);
+      return;
+    }
+
     let isMounted = true;
-    let isChecking = false;
-    let swapTimer: number | null = null;
 
-    const getSoundSignature = (value: SoundAsset[]) => JSON.stringify(value);
-
-    const refreshSounds = async () => {
-      if (isChecking) {
-        return;
-      }
-
-      isChecking = true;
-
+    const cancelIdle = whenIdle(async () => {
       try {
-        const response = await fetch("/api/sounds", { cache: "no-store" });
+        const response = await fetch(`/api/sounds?offset=${sounds.length}`);
 
-        if (!response.ok) {
+        if (!response.ok || !isMounted) {
           return;
         }
 
         const data = (await response.json()) as { sounds?: SoundAsset[] };
-        const nextSounds = Array.isArray(data.sounds) ? data.sounds : [];
-        const nextSignature = getSoundSignature(nextSounds);
 
-        if (!isMounted || nextSignature === soundSignatureRef.current) {
+        if (!isMounted || !Array.isArray(data.sounds)) {
           return;
         }
 
-        soundSignatureRef.current = nextSignature;
-        writeCachedSounds(nextSounds);
-        setIsRefreshingSounds(true);
-        if (swapTimer) {
-          window.clearTimeout(swapTimer);
-        }
-
-        swapTimer = window.setTimeout(() => {
-          if (!isMounted) {
-            return;
-          }
-
-          setLiveSounds(nextSounds);
-          setIsRefreshingSounds(false);
-        }, SKELETON_SWAP_DELAY_MS);
+        setLiveSounds((current) => {
+          const merged = mergeSounds(current, data.sounds ?? []);
+          writeCachedSounds(merged);
+          return merged;
+        });
       } catch {
-        if (isMounted) {
-          setIsRefreshingSounds(false);
-        }
+        // Offline or the request failed: the first page stays usable.
       } finally {
-        isChecking = false;
+        if (isMounted) {
+          setIsLoadingRest(false);
+        }
       }
-    };
-
-    const interval = window.setInterval(refreshSounds, LIVE_UPDATE_INTERVAL_MS);
-    window.addEventListener("focus", refreshSounds);
+    });
 
     return () => {
       isMounted = false;
-      window.clearInterval(interval);
-      window.removeEventListener("focus", refreshSounds);
+      cancelIdle();
+    };
+  }, [sounds, totalSounds]);
 
-      if (swapTimer) {
-        window.clearTimeout(swapTimer);
+  // Cheap freshness check when the visitor comes back to the tab.
+  useEffect(() => {
+    let isMounted = true;
+
+    const revalidate = async () => {
+      if (document.visibilityState !== "visible" || Date.now() - lastCheckedRef.current < REVALIDATE_AFTER_MS) {
+        return;
       }
+
+      lastCheckedRef.current = Date.now();
+
+      try {
+        const response = await fetch("/api/sounds", {
+          headers: etagRef.current ? { "If-None-Match": etagRef.current } : undefined
+        });
+
+        // 304: nothing changed since the last check, so there is nothing to do.
+        if (response.status === 304 || !response.ok || !isMounted) {
+          return;
+        }
+
+        etagRef.current = response.headers.get("etag");
+
+        const data = (await response.json()) as { sounds?: SoundAsset[] };
+
+        if (!isMounted || !Array.isArray(data.sounds) || data.sounds.length === 0) {
+          return;
+        }
+
+        writeCachedSounds(data.sounds);
+        setLiveSounds(data.sounds);
+      } catch {
+        // Leave the current list in place.
+      }
+    };
+
+    window.addEventListener("focus", revalidate);
+    document.addEventListener("visibilitychange", revalidate);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("focus", revalidate);
+      document.removeEventListener("visibilitychange", revalidate);
     };
   }, []);
 
@@ -209,12 +261,12 @@ export function HomeClient({ sounds, freeKits }: HomeClientProps) {
 
   return (
     <main className="grain min-h-screen bg-bone text-ink">
-      <Hero soundCount={liveSounds.length} />
+      <Hero soundCount={Math.max(liveSounds.length, totalSounds)} />
 
       <section id="library" className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pb-8 pt-4 sm:px-6 lg:px-8">
         <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
           <div className="flex flex-wrap gap-2">
-            <StatPill icon={Disc3} label="Assets" value={`${liveSounds.length}`} tone="dark" />
+            <StatPill icon={Disc3} label="Assets" value={`${Math.max(liveSounds.length, totalSounds)}`} tone="dark" />
             <StatPill icon={CheckCircle2} label="Saved" value={`${downloadedIds.length}`} tone="saved" />
             <StatPill icon={Heart} label="Stash" value={`${favoriteIds.length}`} tone="stash" />
             <StatPill icon={Sparkles} label="Fresh" value="Weekly" tone="coral" />
@@ -239,7 +291,7 @@ export function HomeClient({ sounds, freeKits }: HomeClientProps) {
 
           <div className="space-y-3">
             <div
-              className={`grid grid-cols-3 gap-1.5 border-2 border-ink bg-white p-1.5 shadow-[4px_4px_0_#11110f] ${
+              className={`grid grid-cols-3 gap-1.5 border-2 border-ink bg-white p-1.5 shadow-hard-sm ${
                 hasActiveFilters ? "lg:grid-cols-[1fr_170px_170px_auto_auto]" : "lg:grid-cols-[1fr_170px_170px_auto]"
               }`}
             >
@@ -324,6 +376,7 @@ export function HomeClient({ sounds, freeKits }: HomeClientProps) {
                 downloadedIds={downloadedIds}
                 favoriteIds={favoriteIds}
                 isRefreshing={isRefreshingSounds}
+                isLoadingMore={isLoadingRest}
                 onDownloadRecorded={recordDownload}
                 onFavoriteToggle={toggleFavorite}
                 onSignInRequired={openSignIn}

@@ -33,7 +33,7 @@ export function AccountButton() {
       <button
         type="button"
         onClick={openSignIn}
-        className="inline-flex h-10 items-center gap-1.5 border-2 border-ink bg-volt px-3 font-display text-xs font-black uppercase transition hover:-translate-y-0.5"
+        className="inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-2 border-ink bg-volt text-stamp px-3 font-display text-xs font-black uppercase transition hover:-translate-y-0.5"
       >
         <LogIn className="h-4 w-4" aria-hidden />
         Sign in
@@ -50,7 +50,7 @@ export function AccountButton() {
         type="button"
         onClick={handleSignOut}
         disabled={isSigningOut}
-        className="inline-flex h-10 items-center gap-1.5 border-2 border-ink bg-white px-3 font-display text-xs font-black uppercase transition hover:-translate-y-0.5 disabled:opacity-60"
+        className="inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-2 border-ink bg-white px-3 font-display text-xs font-black uppercase transition hover:-translate-y-0.5 disabled:opacity-60"
       >
         <LogOut className="h-4 w-4" aria-hidden />
         <span className="hidden sm:inline">Sign out</span>

@@ -10,8 +10,17 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text,
   display_name text,
+  theme text,
   created_at timestamptz not null default now()
 );
+
+-- Added after the initial release: the chosen light/dark theme, so it follows
+-- the account across devices instead of living only in one browser.
+alter table public.profiles add column if not exists theme text;
+
+alter table public.profiles drop constraint if exists profiles_theme_check;
+alter table public.profiles add constraint profiles_theme_check
+  check (theme is null or theme in ('light', 'dark'));
 
 create or replace function public.handle_new_user()
 returns trigger

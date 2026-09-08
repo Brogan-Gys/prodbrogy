@@ -15,9 +15,41 @@
 :root {
   --font-inter: "Inter", Arial, "Helvetica Neue", sans-serif;
   --font-space: "Space Grotesk", "Arial Black", Impact, "Trebuchet MS", sans-serif;
-  color-scheme: light only;
-  background: #f6f1e7;
-  color: #11110f;
+
+  /* Light theme (the default). Values are `R G B` channels so Tailwind can
+     layer opacity modifiers on top of them. */
+  --c-ink: 17 17 15;
+  --c-bone: 246 241 231;
+  --c-paper: 255 255 255;
+  --c-volt: 204 255 0;
+  --c-coral: 255 93 77;
+  --c-cyan: 55 213 255;
+  --c-plum: 108 76 255;
+
+  /* Surfaces outside the Tailwind palette. */
+  --c-scroll-track: 255 255 255;
+  --c-scrim: 17 17 15;
+  --grain-opacity: 0.08;
+
+  color-scheme: light;
+  background: rgb(var(--c-bone));
+  color: rgb(var(--c-ink));
+}
+
+[data-theme="dark"] {
+  --c-ink: 242 237 226;
+  --c-bone: 20 19 15;
+  --c-paper: 30 28 23;
+  --c-volt: 194 240 0;
+  --c-coral: 255 111 95;
+  --c-cyan: 77 220 255;
+  --c-plum: 139 114 255;
+
+  --c-scroll-track: 30 28 23;
+  --c-scrim: 0 0 0;
+  --grain-opacity: 0.05;
+
+  color-scheme: dark;
 }
 
 * {
@@ -25,7 +57,6 @@
 }
 
 html {
-  color-scheme: light only;
   scroll-behavior: smooth;
   scrollbar-width: none;
 }
@@ -45,8 +76,8 @@ body {
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
-  color: #11110f;
-  background: #f6f1e7;
+  color: rgb(var(--c-ink));
+  background: rgb(var(--c-bone));
   font-family: var(--font-inter), Arial, sans-serif;
 }
 
@@ -56,7 +87,7 @@ a {
 }
 
 ::selection {
-  background: #ccff00;
+  background: rgb(var(--c-volt));
   color: #11110f;
 }
 
@@ -66,7 +97,7 @@ a {
   position: fixed;
   inset: 0;
   z-index: 50;
-  opacity: 0.08;
+  opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
 }
 
@@ -87,7 +118,7 @@ a {
 
 .sound-library-scroll {
   scrollbar-gutter: stable;
-  scrollbar-color: #11110f #ffffff;
+  scrollbar-color: rgb(var(--c-ink)) rgb(var(--c-scroll-track));
   scrollbar-width: thin;
   /* Keep momentum scrolling inside the list instead of chaining to the page,
      which is what makes nested scrolling stutter on iOS. */
@@ -100,17 +131,17 @@ a {
 }
 
 .sound-library-scroll::-webkit-scrollbar-track {
-  background: #ffffff;
-  border-left: 2px solid #11110f;
+  background: rgb(var(--c-scroll-track));
+  border-left: 2px solid rgb(var(--c-ink));
 }
 
 .sound-library-scroll::-webkit-scrollbar-thumb {
-  background: #11110f;
-  border: 2px solid #ffffff;
+  background: rgb(var(--c-ink));
+  border: 2px solid rgb(var(--c-scroll-track));
 }
 
 .sound-library-scroll::-webkit-scrollbar-thumb:hover {
-  background: #3a342c;
+  background: rgb(var(--c-ink) / 0.75);
 }
 
 .sound-library-row {
@@ -133,8 +164,8 @@ a {
 
 .volume-slider::-webkit-slider-runnable-track {
   height: 14px;
-  border: 2px solid #11110f;
-  background: linear-gradient(to right, #ccff00 0 var(--volume-percent), #f6f1e7 var(--volume-percent) 100%);
+  border: 2px solid rgb(var(--c-ink));
+  background: linear-gradient(to right, rgb(var(--c-volt)) 0 var(--volume-percent), rgb(var(--c-bone)) var(--volume-percent) 100%);
 }
 
 .volume-slider::-webkit-slider-thumb {
@@ -142,38 +173,38 @@ a {
   height: 24px;
   margin-top: -7px;
   appearance: none;
-  border: 2px solid #11110f;
-  background: #ffffff;
-  box-shadow: 3px 3px 0 #11110f;
+  border: 2px solid rgb(var(--c-ink));
+  background: rgb(var(--c-paper));
+  box-shadow: 3px 3px 0 rgb(var(--c-ink));
 }
 
 .volume-slider:focus-visible::-webkit-slider-thumb {
-  background: #69e7ff;
+  background: rgb(var(--c-cyan));
 }
 
 .volume-slider::-moz-range-track {
   height: 14px;
-  border: 2px solid #11110f;
-  background: #f6f1e7;
+  border: 2px solid rgb(var(--c-ink));
+  background: rgb(var(--c-bone));
 }
 
 .volume-slider::-moz-range-progress {
   height: 14px;
-  border: 2px solid #11110f;
-  background: #ccff00;
+  border: 2px solid rgb(var(--c-ink));
+  background: rgb(var(--c-volt));
 }
 
 .volume-slider::-moz-range-thumb {
   width: 24px;
   height: 24px;
-  border: 2px solid #11110f;
+  border: 2px solid rgb(var(--c-ink));
   border-radius: 0;
-  background: #ffffff;
-  box-shadow: 3px 3px 0 #11110f;
+  background: rgb(var(--c-paper));
+  box-shadow: 3px 3px 0 rgb(var(--c-ink));
 }
 
 .volume-slider:focus-visible::-moz-range-thumb {
-  background: #69e7ff;
+  background: rgb(var(--c-cyan));
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -48,6 +48,8 @@ type AnimatedListProps<T> = {
   maxVisibleItems?: number;
   minVisibleItems?: number;
   emptyState?: ReactNode;
+  /** Rows mounted up front; more are added as the sentinel scrolls into view. */
+  chunkSize?: number;
   getItemKey?: (item: T, index: number) => string | number;
   renderItem?: (item: T, index: number, selected: boolean) => ReactNode;
 };
@@ -83,6 +85,7 @@ export default function AnimatedList<T = string>({
   maxVisibleItems,
   minVisibleItems,
   emptyState,
+  chunkSize = 12,
   getItemKey,
   renderItem
 }: AnimatedListProps<T>) {
@@ -94,6 +97,44 @@ export default function AnimatedList<T = string>({
   const scrollFrameRef = useRef<number | null>(null);
   const [maxHeight, setMaxHeight] = useState<number | null>(null);
   const [minHeight, setMinHeight] = useState<number | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  // Mounting every row at once is what made a large library slow to appear;
+  // rows past this count are added a chunk at a time while scrolling.
+  const [mountedCount, setMountedCount] = useState(chunkSize);
+
+  // Reset only when the list actually changes (filter, search, sort) — not when
+  // background-loaded rows are appended, which would undo the reader's scroll.
+  const listSignature = `${items.length === 0 ? "empty" : String(getItemKey?.(items[0], 0) ?? "0")}`;
+
+  useEffect(() => {
+    setMountedCount(chunkSize);
+  }, [listSignature, chunkSize]);
+
+  const visibleItems = items.slice(0, mountedCount);
+  const hasMore = mountedCount < items.length;
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+
+    if (!sentinel || !hasMore) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setMountedCount((current) => Math.min(current + chunkSize, items.length));
+        }
+      },
+      // Root is the scroll container when the list scrolls internally, and the
+      // viewport otherwise. The margin starts the next chunk before it is needed.
+      { root: maxHeight ? listRef.current : null, rootMargin: "600px 0px" }
+    );
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [chunkSize, hasMore, items.length, maxHeight]);
 
   const handleItemMouseEnter = useCallback((index: number) => {
     setSelectedIndex(index);
@@ -259,7 +300,7 @@ export default function AnimatedList<T = string>({
 
   const scrollStyle: CSSProperties = {
     scrollbarWidth: displayScrollbar ? "thin" : "none",
-    scrollbarColor: "#11110f #ffffff"
+    scrollbarColor: "rgb(var(--c-ink)) rgb(var(--c-scroll-track))"
   };
 
   if (maxHeight) {
@@ -286,7 +327,7 @@ export default function AnimatedList<T = string>({
         tabIndex={enableArrowNavigation ? 0 : undefined}
       >
         {items.length > 0
-          ? items.map((item, index) => (
+          ? visibleItems.map((item, index) => (
               <AnimatedItem
                 key={getItemKey?.(item, index) ?? index}
                 delay={0}
@@ -310,6 +351,8 @@ export default function AnimatedList<T = string>({
               </AnimatedItem>
             ))
           : emptyState}
+
+        {hasMore ? <div ref={sentinelRef} aria-hidden className="h-px w-full" /> : null}
       </div>
 
       {showGradients ? (

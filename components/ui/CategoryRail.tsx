@@ -11,7 +11,7 @@ type CategoryRailProps = {
 
 export function CategoryRail({ categories, activeCategory, onSelectCategory }: CategoryRailProps) {
   return (
-    <div id="library" className="border-2 border-ink bg-white p-2 shadow-[4px_4px_0_#11110f]">
+    <div id="library" className="border-2 border-ink bg-white p-2 shadow-hard-sm">
       <div className="border-b-2 border-ink px-2 py-2">
         <p className="font-display text-lg font-black uppercase leading-none">Library</p>
       </div>
@@ -27,7 +27,7 @@ export function CategoryRail({ categories, activeCategory, onSelectCategory }: C
               onClick={() => onSelectCategory(category.id)}
               className={cn(
                 "group grid min-h-10 grid-cols-[30px_1fr] items-center gap-2 border-2 border-ink px-2 text-left transition",
-                isActive ? "bg-volt text-ink" : "bg-white hover:bg-bone"
+                isActive ? "bg-cyan text-stamp" : "bg-white hover:bg-bone"
               )}
             >
               <span className={cn("flex h-7 w-7 items-center justify-center border-2 border-ink", isActive ? "bg-ink text-bone" : "bg-bone")}>

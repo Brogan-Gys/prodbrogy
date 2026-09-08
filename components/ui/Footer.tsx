@@ -36,7 +36,7 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={label}
-              className="inline-flex h-8 min-w-0 items-center justify-center gap-1.5 border-2 border-ink bg-white px-1.5 font-display text-[9px] font-black uppercase shadow-[4px_4px_0_#11110f] transition hover:-translate-y-0.5 sm:h-9 sm:px-2 sm:text-[10px] lg:h-10 lg:gap-2 lg:px-3 lg:text-xs lg:shadow-hard"
+              className="inline-flex h-8 min-w-0 items-center justify-center gap-1.5 border-2 border-ink bg-white px-1.5 font-display text-[9px] font-black uppercase shadow-hard-sm transition hover:-translate-y-0.5 sm:h-9 sm:px-2 sm:text-[10px] lg:h-10 lg:gap-2 lg:px-3 lg:text-xs lg:shadow-hard"
             >
               <span
                 className={`hidden h-5 w-5 shrink-0 items-center justify-center border-2 border-ink sm:flex lg:h-6 lg:w-6 ${tone}`}

@@ -7,6 +7,7 @@ import {
   signedOutAccount,
   type AccountState
 } from "@/lib/account";
+import { applyThemePreference, isThemePreference, readThemePreference } from "@/lib/theme";
 
 type AccountContextValue = AccountState & {
   isLoading: boolean;
@@ -26,7 +27,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      setState(await fetchAccountState());
+      const next = await fetchAccountState();
+      setState(next);
+
+      // Signing in on a new device should bring the account's saved theme with
+      // it; the local choice only wins when the profile has never stored one.
+      if (isThemePreference(next.theme) && next.theme !== readThemePreference()) {
+        applyThemePreference(next.theme);
+      }
     } catch {
       setState(signedOutAccount);
     } finally {

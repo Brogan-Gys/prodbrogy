@@ -118,7 +118,7 @@ export function AccountsClient() {
         </button>
       </form>
 
-      {error ? <p className="mt-4 border-2 border-ink bg-coral p-3 font-bold">{error}</p> : null}
+      {error ? <p className="mt-4 border-2 border-ink bg-coral text-stamp p-3 font-bold">{error}</p> : null}
 
       {totals ? (
         <div className="mt-8 grid gap-3 sm:grid-cols-3">

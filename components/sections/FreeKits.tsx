@@ -11,10 +11,10 @@ type FreeKitsProps = {
 };
 
 const accentClass = {
-  volt: "bg-volt",
-  coral: "bg-coral",
-  cyan: "bg-cyan",
-  plum: "bg-plum"
+  volt: "bg-volt text-stamp",
+  coral: "bg-coral text-stamp",
+  cyan: "bg-cyan text-stamp",
+  plum: "bg-plum text-chalk"
 };
 
 function FreeKitsContent({ kits }: FreeKitsProps) {
@@ -69,7 +69,7 @@ function FreeKitsContent({ kits }: FreeKitsProps) {
             <article
               key={kit.id}
               data-free-kit-card
-              className="grid min-h-[260px] grid-rows-[auto_1fr_auto] border-2 border-ink bg-white p-2 shadow-[4px_4px_0_#11110f]"
+              className="grid min-h-[260px] grid-rows-[auto_1fr_auto] border-2 border-ink bg-white p-2 shadow-hard-sm"
             >
               <div className={cn("relative aspect-[16/9] overflow-hidden border-2 border-ink", accentClass[kit.accent])}>
                 {kit.imageUrl ? (

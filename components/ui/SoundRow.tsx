@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, CheckCircle2, Heart, Loader2, Pause, Play, X } from "lucide-react";
+import { ArrowDownToLine, CheckCircle2, Heart, Loader2, Music4, Pause, Play, X } from "lucide-react";
 import {
   DEFAULT_PREVIEW_VOLUME,
   PREVIEW_VOLUME_CHANGE_EVENT,
@@ -9,6 +9,14 @@ import {
   normalizePreviewVolume
 } from "@/lib/previewVolume";
 import { cn } from "@/lib/utils";
+import {
+  DEFAULT_INSTRUMENT,
+  INSTRUMENT_STORAGE_KEY,
+  instrumentOptions,
+  isInstrumentId,
+  type InstrumentId
+} from "@/lib/midiInstruments";
+import type { MidiPlaybackHandle, PreviewNote } from "@/lib/midiPlayer";
 import { type SoundAsset } from "@/lib/sounds";
 
 type SoundRowProps = {
@@ -26,10 +34,10 @@ type ActivePreview = {
 };
 
 const accentClass = {
-  volt: "bg-volt",
-  coral: "bg-coral",
-  cyan: "bg-cyan",
-  plum: "bg-plum text-bone"
+  volt: "bg-volt text-stamp",
+  coral: "bg-coral text-stamp",
+  cyan: "bg-cyan text-stamp",
+  plum: "bg-plum text-chalk"
 };
 
 const audioFilePattern = /\.(mp3|wav|m4a|ogg|flac|webm)(\?|#|$)/i;
@@ -172,6 +180,12 @@ export function SoundRow({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef("");
   const previewVolumeRef = useRef(DEFAULT_PREVIEW_VOLUME);
+  const midiHandleRef = useRef<MidiPlaybackHandle | null>(null);
+  const midiNotesRef = useRef<PreviewNote[] | null>(null);
+  const [instrument, setInstrument] = useState<InstrumentId>(DEFAULT_INSTRUMENT);
+
+  // A MIDI file with no bounced preview is rendered live in the browser.
+  const usesMidiPlayer = sound.category === "midi" && !sound.previewUrl;
 
   const previewLimit = useMemo(() => getPreviewLimit(sound.category), [sound.category]);
   const fallbackPreviewDuration = useMemo(() => parseDurationSeconds(sound.duration), [sound.duration]);
@@ -195,6 +209,16 @@ export function SoundRow({
 
   useEffect(() => {
     previewVolumeRef.current = readStoredPreviewVolume();
+
+    try {
+      const stored = window.localStorage.getItem(INSTRUMENT_STORAGE_KEY);
+
+      if (isInstrumentId(stored)) {
+        setInstrument(stored);
+      }
+    } catch {
+      // Storage blocked — the default instrument is fine.
+    }
   }, []);
 
   useEffect(() => {
@@ -226,6 +250,7 @@ export function SoundRow({
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
+      midiHandleRef.current?.stop();
       clearPlaybackTimers();
       if (activePreview?.id === sound.id) {
         activePreview = null;
@@ -252,6 +277,11 @@ export function SoundRow({
     const audio = audioRef.current;
 
     clearPlaybackTimers();
+
+    if (midiHandleRef.current) {
+      midiHandleRef.current.stop();
+      midiHandleRef.current = null;
+    }
 
     if (audio) {
       audio.pause();
@@ -332,11 +362,96 @@ export function SoundRow({
     }
   };
 
+  /**
+   * Plays a MIDI file that has no bounced preview. The .mid itself stays behind
+   * the paywall — the API hands back only the opening notes as data, and the
+   * samples come from a soundfont CDN, both loaded on demand.
+   */
+  const playMidi = async (withInstrument: InstrumentId = instrument) => {
+    activatePreview();
+    setIsAudioLoading(true);
+    setPlayhead(0);
+
+    try {
+      if (!midiNotesRef.current) {
+        const response = await fetch(`/api/midi-preview?soundId=${encodeURIComponent(sound.id)}`);
+
+        if (!response.ok) {
+          throw new Error("preview unavailable");
+        }
+
+        const data = (await response.json()) as { notes?: PreviewNote[] };
+
+        if (!Array.isArray(data.notes) || data.notes.length === 0) {
+          throw new Error("no notes");
+        }
+
+        midiNotesRef.current = data.notes;
+      }
+
+      // Loaded here, not at module scope, so the audio engine and its samples
+      // never touch the initial page load.
+      const { playMidiPreview } = await import("@/lib/midiPlayer");
+
+      const handle = await playMidiPreview(midiNotesRef.current, {
+        instrument: withInstrument,
+        volume: previewVolumeRef.current,
+        onEnded: () => stopPlayback()
+      });
+
+      midiHandleRef.current = handle;
+      setIsAudioLoading(false);
+      setIsPlaying(true);
+
+      const startedAt = Date.now();
+      progressTimerRef.current = window.setInterval(() => {
+        const elapsed = (Date.now() - startedAt) / 1000;
+        setPlayhead(handle.duration > 0 ? Math.min(elapsed / handle.duration, 1) : 0);
+      }, 100);
+    } catch {
+      setIsAudioLoading(false);
+      setIsPlaying(false);
+      clearActivePreview();
+      flashNotice("Preview unavailable");
+    }
+  };
+
+  const changeInstrument = (value: string) => {
+    if (!isInstrumentId(value) || value === instrument) {
+      return;
+    }
+
+    setInstrument(value);
+
+    try {
+      window.localStorage.setItem(INSTRUMENT_STORAGE_KEY, value);
+    } catch {
+      // Storage blocked — the choice just won't persist.
+    }
+
+    // Restart with the new instrument so the switch is immediately audible.
+    if (isPlaying || isAudioLoading) {
+      stopPlayback();
+      window.setTimeout(() => void playMidi(value), 60);
+    }
+  };
+
   const handlePreview = () => {
     previewVolumeRef.current = readStoredPreviewVolume();
 
     if (previewVolumeRef.current <= 0) {
       stopPlayback("Volume is muted");
+      return;
+    }
+
+    if (usesMidiPlayer) {
+      if (isPlaying || isAudioLoading) {
+        stopPlayback();
+        clearActivePreview();
+        return;
+      }
+
+      void playMidi();
       return;
     }
 
@@ -484,7 +599,7 @@ export function SoundRow({
     <>
       <article
         data-sound-row
-        className="grid min-h-[94px] gap-1.5 border-2 border-ink bg-white p-1.5 shadow-[4px_4px_0_#11110f] lg:min-h-[98px] lg:grid-cols-[1fr_220px] lg:gap-2 lg:p-2"
+        className="grid min-h-[94px] gap-1.5 border-2 border-ink bg-white p-1.5 shadow-hard-sm lg:min-h-[98px] lg:grid-cols-[1fr_220px] lg:gap-2 lg:p-2"
       >
         <div className="grid grid-cols-[36px_1fr] gap-1.5 lg:grid-cols-[48px_1fr] lg:gap-2">
           <button
@@ -520,12 +635,12 @@ export function SoundRow({
               </div>
               <div className="flex flex-wrap justify-end gap-1 lg:gap-2">
                 {isNew ? (
-                  <span className="inline-flex items-center border-2 border-ink bg-volt px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]">
+                  <span className="inline-flex items-center border-2 border-ink bg-volt text-stamp px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]">
                     New
                   </span>
                 ) : null}
                 {isDownloaded ? (
-                  <span className="inline-flex items-center gap-1 border-2 border-ink bg-cyan px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]">
+                  <span className="inline-flex items-center gap-1 border-2 border-ink bg-cyan text-stamp px-1.5 py-0.5 font-display text-[9px] font-black uppercase lg:px-2 lg:text-[11px]">
                     <CheckCircle2 className="h-3 w-3 lg:h-3.5 lg:w-3.5" aria-hidden />
                     Downloaded
                   </span>
@@ -538,6 +653,25 @@ export function SoundRow({
                 </span>
               </div>
             </div>
+
+            {usesMidiPlayer ? (
+              <div className="mt-1.5 flex items-center gap-1.5 lg:mt-2">
+                <Music4 className="h-3 w-3 shrink-0 text-ink/55 lg:h-3.5 lg:w-3.5" aria-hidden />
+                <select
+                  value={instrument}
+                  onChange={(event) => changeInstrument(event.target.value)}
+                  onClick={(event) => event.stopPropagation()}
+                  className="h-6 min-w-0 max-w-[150px] appearance-none border-2 border-ink bg-bone px-1.5 font-display text-[9px] font-black uppercase outline-none lg:h-7 lg:text-[10px]"
+                  aria-label={`Preview instrument for ${sound.title}`}
+                >
+                  {instrumentOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
             <div className="mt-1.5 border-2 border-ink bg-bone p-1 lg:mt-3 lg:p-1.5">
               <div className="h-1.5 overflow-hidden border-2 border-ink bg-white lg:h-2">
@@ -561,7 +695,7 @@ export function SoundRow({
               onClick={() => onFavoriteToggle?.(sound)}
               className={cn(
                 "inline-flex h-8 w-8 shrink-0 items-center justify-center border-2 border-ink transition hover:-translate-y-0.5 lg:h-9 lg:w-9",
-                isFavorited ? "bg-coral text-ink" : "bg-white text-ink"
+                isFavorited ? "bg-coral text-stamp" : "bg-white text-ink"
               )}
               aria-label={`${isFavorited ? "Remove from" : "Add to"} stash: ${sound.title}`}
               title={isFavorited ? "Remove from stash" : "Add to stash"}
@@ -587,7 +721,7 @@ export function SoundRow({
       </article>
 
       {embedUrl ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/80 p-4">
           <div className="w-full max-w-2xl border-2 border-ink bg-white p-3 shadow-hard">
             <div className="mb-3 flex items-center justify-between gap-3">
               <p className="min-w-0 truncate font-display text-xl font-black uppercase">{sound.title}</p>

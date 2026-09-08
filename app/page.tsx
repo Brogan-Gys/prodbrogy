@@ -1,9 +1,15 @@
 import { HomeClient } from "./HomeClient";
-import { getFreeKits, getSounds } from "@/lib/sanity/queries";
+import { getFreeKits, getSoundsPage } from "@/lib/sanity/queries";
+import { INITIAL_SOUND_PAGE_SIZE } from "@/lib/sounds";
 import { siteConfig } from "@/lib/site";
 
 export default async function Home() {
-  const [sounds, freeKits] = await Promise.all([getSounds(), getFreeKits()]);
+  // Only the first page is serialised into the HTML; HomeClient pulls the rest
+  // in one background request after the page is interactive.
+  const [soundsPage, freeKits] = await Promise.all([
+    getSoundsPage({ limit: INITIAL_SOUND_PAGE_SIZE }),
+    getFreeKits()
+  ]);
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -35,7 +41,7 @@ export default async function Home() {
         suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <HomeClient sounds={sounds} freeKits={freeKits} />
+      <HomeClient sounds={soundsPage.sounds} totalSounds={soundsPage.total} freeKits={freeKits} />
     </>
   );
 }

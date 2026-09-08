@@ -67,7 +67,7 @@ export function SubmissionCallout() {
       }`}
     >
       {isOpen ? (
-        <div className="relative w-[min(calc(100vw-24px),340px)] border-2 border-ink bg-ink p-3 text-bone shadow-[6px_6px_0_#ffffff]">
+        <div className="relative w-[min(calc(100vw-24px),340px)] border-2 border-ink bg-ink p-3 text-bone shadow-hard-inv">
           <span className="absolute -left-2 bottom-7 h-4 w-4 rotate-45 border-b-2 border-l-2 border-ink bg-ink" aria-hidden />
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -92,7 +92,7 @@ export function SubmissionCallout() {
             href="https://t.me/prodbrogy"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 border-2 border-bone bg-volt px-3 font-display text-xs font-black uppercase text-ink transition hover:-translate-y-0.5"
+            className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 border-2 border-bone bg-volt text-stamp px-3 font-display text-xs font-black uppercase transition hover:-translate-y-0.5"
           >
             <Send className="h-4 w-4" aria-hidden />
             Message on Telegram
@@ -102,7 +102,7 @@ export function SubmissionCallout() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="inline-flex h-11 items-center gap-2 rounded-full border-2 border-ink bg-volt px-4 font-display text-xs font-black uppercase text-ink shadow-hard transition hover:-translate-y-0.5"
+          className="inline-flex h-11 items-center gap-2 rounded-full border-2 border-ink bg-volt text-stamp px-4 font-display text-xs font-black uppercase shadow-hard transition hover:-translate-y-0.5"
           aria-label="Open submission bubble"
         >
           <MessageCircle className="h-4 w-4" aria-hidden />

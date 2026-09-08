@@ -262,7 +262,7 @@ export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPa
             void addBatchFiles(event.dataTransfer.files);
           }}
           className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-ink px-4 py-10 text-center transition ${
-            dragging ? "bg-volt shadow-hard" : "bg-bone/60 hover:bg-bone"
+            dragging ? "bg-volt text-stamp shadow-hard" : "bg-bone/60 hover:bg-bone"
           }`}
         >
           <UploadCloud className="h-8 w-8" aria-hidden />
@@ -370,7 +370,7 @@ export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPa
                       onClick={() => removeBatchRow(row.rowId)}
                       disabled={batchSaving}
                       aria-label="Remove from queue"
-                      className="inline-flex h-9 items-center gap-1 border-2 border-ink bg-coral px-2 font-display text-xs font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-9 items-center gap-1 border-2 border-ink bg-coral text-stamp px-2 font-display text-xs font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Trash2 className="h-4 w-4" aria-hidden />
                     </button>
@@ -384,7 +384,7 @@ export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPa
                 type="button"
                 onClick={handleBatchSave}
                 disabled={batchSaving || pendingCount === 0}
-                className="inline-flex h-12 items-center gap-2 border-2 border-ink bg-volt px-5 font-display text-sm font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-12 items-center gap-2 border-2 border-ink bg-volt text-stamp px-5 font-display text-sm font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {batchSaving ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <UploadCloud className="h-5 w-5" aria-hidden />}
                 Save all ({pendingCount})
@@ -445,8 +445,11 @@ export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPa
               <input name="downloadFile" type="file" accept=".zip,.rar,.7z,.mid,.midi,audio/*" required className="file-input" />
             </Field>
             {midiCategory === "midi" ? (
-              <Field label="Preview audio">
-                <input name="previewFile" type="file" accept={AUDIO_ACCEPT} required className="file-input" />
+              <Field label="Preview audio (optional)">
+                <input name="previewFile" type="file" accept={AUDIO_ACCEPT} className="file-input" />
+                <p className="mt-1 text-[11px] font-bold uppercase text-ink/55">
+                  Leave empty to let the site play the MIDI itself through a soundfont.
+                </p>
               </Field>
             ) : null}
             <Field label="BPM">
@@ -459,7 +462,7 @@ export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPa
               <button
                 type="submit"
                 disabled={midiSaving || !password}
-                className="inline-flex h-12 items-center gap-2 border-2 border-ink bg-volt px-5 font-display text-sm font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-12 items-center gap-2 border-2 border-ink bg-volt text-stamp px-5 font-display text-sm font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {midiSaving ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Plus className="h-5 w-5" aria-hidden />}
                 Add sound

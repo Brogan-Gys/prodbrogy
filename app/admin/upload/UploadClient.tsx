@@ -110,7 +110,7 @@ export function UploadClient() {
           <button
             type="submit"
             disabled={loadingSounds || !password}
-            className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 border-2 border-ink bg-volt px-4 font-display text-sm font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 border-2 border-ink bg-volt text-stamp px-4 font-display text-sm font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loadingSounds ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <LogIn className="h-5 w-5" aria-hidden />}
             Enter
@@ -206,7 +206,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={`inline-flex h-10 items-center gap-2 px-3 font-display text-xs font-black uppercase transition ${
-        active ? "bg-volt" : "bg-white hover:bg-bone"
+        active ? "bg-volt text-stamp" : "bg-white hover:bg-bone"
       }`}
     >
       {icon}
@@ -222,9 +222,9 @@ function StatusToast({ state }: { state: UploadState }) {
 
   const tone =
     state.status === "error"
-      ? "bg-coral"
+      ? "bg-coral text-stamp"
       : state.status === "success"
-        ? "bg-volt"
+        ? "bg-volt text-stamp"
         : "bg-white";
 
   return (

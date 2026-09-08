@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { AccountProvider } from "@/components/auth/AccountProvider";
 import { SignInDialog } from "@/components/auth/SignInDialog";
 import { siteConfig } from "@/lib/site";
+import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -62,16 +63,21 @@ export const metadata: Metadata = {
   }
 };
 
+export const viewport: Viewport = {
+  // Updated at runtime by applyThemePreference when the visitor toggles.
+  themeColor: "#f6f1e7"
+};
+
 export default function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="color-scheme" content="light only" />
-        <meta name="supported-color-schemes" content="light" />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <meta name="color-scheme" content="light dark" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

@@ -187,7 +187,7 @@ export function LibraryPanel({ password, sounds, loadingSounds, onStatus, reload
           type="button"
           onClick={() => void reload()}
           disabled={loadingSounds || !password}
-          className="inline-flex h-12 items-center justify-center gap-2 border-2 border-ink bg-cyan px-4 font-display text-sm font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-12 items-center justify-center gap-2 border-2 border-ink bg-cyan text-stamp px-4 font-display text-sm font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <RefreshCw className={loadingSounds ? "h-5 w-5 animate-spin" : "h-5 w-5"} aria-hidden />
           Refresh
@@ -342,7 +342,7 @@ export function LibraryPanel({ password, sounds, loadingSounds, onStatus, reload
                       <button
                         type="submit"
                         disabled={savingId === sound.id || !password}
-                        className="inline-flex h-11 items-center gap-2 border-2 border-ink bg-volt px-4 font-display text-xs font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-11 items-center gap-2 border-2 border-ink bg-volt text-stamp px-4 font-display text-xs font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {savingId === sound.id ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Save className="h-4 w-4" aria-hidden />}
                         Save
@@ -420,7 +420,7 @@ function RowActions({
         onClick={onDelete}
         disabled={deleting || disabled}
         aria-label="Delete sound"
-        className="inline-flex h-9 items-center gap-1 border-2 border-ink bg-coral px-2.5 font-display text-xs font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-9 items-center gap-1 border-2 border-ink bg-coral text-stamp px-2.5 font-display text-xs font-black uppercase shadow-hard transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {deleting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Trash2 className="h-4 w-4" aria-hidden />}
       </button>

@@ -1,3 +1,5 @@
+import type { ThemePreference } from "@/lib/theme";
+
 export type AccountUser = {
   id: string;
   email?: string | null;
@@ -15,6 +17,8 @@ export type AccountState = {
   credits: AccountCredits;
   downloadedIds: string[];
   favoriteIds: string[];
+  /** Theme saved on the profile, or null when the account never chose one. */
+  theme: ThemePreference | null;
 };
 
 export const ACCOUNT_CHANGED_EVENT = "account:changed";
@@ -23,7 +27,8 @@ export const signedOutAccount: AccountState = {
   user: null,
   credits: { used: 0, total: 0, bonuses: 0 },
   downloadedIds: [],
-  favoriteIds: []
+  favoriteIds: [],
+  theme: null
 };
 
 export async function fetchAccountState(): Promise<AccountState> {

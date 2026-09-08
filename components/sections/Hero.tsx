@@ -5,6 +5,7 @@ import { ArrowDown, Play, Radio } from "lucide-react";
 import gsap from "gsap";
 import { AccountButton } from "@/components/auth/AccountButton";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 type HeroProps = {
   soundCount?: number;
@@ -62,18 +63,21 @@ export function Hero({ soundCount = 0 }: HeroProps) {
       ref={heroRef}
       className="relative mx-auto flex min-h-[86svh] w-full max-w-7xl flex-col justify-between overflow-hidden px-4 py-5 sm:px-6 lg:px-8"
     >
-      <nav className="relative z-10 flex items-center justify-between border-2 border-ink bg-bone/85 px-3 py-3 backdrop-blur md:px-5">
+      <nav className="relative z-10 flex flex-wrap items-center justify-between gap-y-2 border-2 border-ink bg-bone/85 px-3 py-3 backdrop-blur md:px-5">
         <div className="flex items-center gap-2">
           <a href="#" className="font-display text-xl font-black uppercase tracking-normal">
             ProdBrogy
           </a>
-          <span className="border-2 border-ink bg-coral px-2 py-1 font-display text-xs font-black uppercase">Beta</span>
+          <span className="hidden border-2 border-ink bg-coral text-stamp px-2 py-1 font-display text-xs font-black uppercase sm:inline-block">
+            Beta
+          </span>
         </div>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <AccountButton />
           <a
             href="#library"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center border-2 border-ink bg-volt text-ink transition hover:-translate-y-0.5"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center border-2 border-ink bg-plum text-chalk transition hover:-translate-y-0.5"
             aria-label="Jump to library"
           >
             <ArrowDown className="h-5 w-5" />

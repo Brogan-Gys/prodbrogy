@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Mail } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -16,19 +17,22 @@ export default function PrivacyPage() {
   return (
     <main className="grain min-h-screen bg-bone text-ink">
       <section className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 border-2 border-ink bg-white px-3 py-2 font-display text-[11px] font-black uppercase shadow-hard transition hover:-translate-y-0.5"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to sounds
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 border-2 border-ink bg-white px-3 py-2 font-display text-[11px] font-black uppercase shadow-hard transition hover:-translate-y-0.5"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back to sounds
+          </Link>
+          <ThemeToggle />
+        </div>
 
         <h1 className="mt-6 font-display text-3xl font-black uppercase leading-none sm:text-4xl">Privacy Policy</h1>
         <p className="mt-2 text-xs font-bold uppercase text-ink/55">Last updated {LAST_UPDATED}</p>
 
         <div className="mt-6 space-y-6 border-2 border-ink bg-white p-5 text-sm leading-6 shadow-hard sm:p-7 sm:text-base">
-          <p className="border-2 border-ink bg-coral px-3 py-2 font-bold">
+          <p className="border-2 border-ink bg-coral text-stamp px-3 py-2 font-bold">
             Short version: you can browse and preview everything without an account. Making an account stores your email
             and what you have downloaded, so your daily credits and stash work. Nothing is sold or shared with
             advertisers.

@@ -15,7 +15,7 @@ const fetchOptions =
   process.env.NODE_ENV === "development" ? { cache: "no-store" as const } : { next: { revalidate: 60 } };
 const SOUND_FETCH_TIMEOUT_MS = 5000;
 
-const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
+const soundFields = `{
   "id": _id,
   "createdAt": _createdAt,
   title,
@@ -29,6 +29,15 @@ const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) {
   "accent": coalesce(accent, "volt"),
   previewUrl,
   downloadUrl
+}`;
+
+const soundsQuery = `*[_type == "soundAsset"] | order(_createdAt desc) ${soundFields}`;
+
+/** Same ordering as soundsQuery, sliced server-side so the first paint only
+ *  has to carry one page of records instead of the whole catalogue. */
+const soundsPageQuery = `{
+  "sounds": *[_type == "soundAsset"] | order(_createdAt desc) [$offset...$end] ${soundFields},
+  "total": count(*[_type == "soundAsset"])
 }`;
 
 const freeKitsQuery = `*[_type == "freeKit" && published != false] | order(sortOrder asc, _createdAt desc) {
@@ -78,6 +87,44 @@ export async function getSounds(options: SoundFetchOptions = fetchOptions): Prom
   }
 }
 
+export type SoundsPage = {
+  sounds: SoundAsset[];
+  total: number;
+};
+
+/**
+ * Reads one slice of the catalogue plus the total count. The home page uses
+ * this so the initial HTML stays small; the client pulls the remainder in a
+ * single background request once the page is interactive.
+ */
+export async function getSoundsPage(
+  { offset = 0, limit = 24 }: { offset?: number; limit?: number } = {},
+  options: SoundFetchOptions = fetchOptions
+): Promise<SoundsPage> {
+  if (!hasSanityConfig) {
+    return { sounds: [], total: 0 };
+  }
+
+  try {
+    const page = await withTimeout(
+      sanityClient.fetch<SoundsPage>(soundsPageQuery, { offset, end: offset + limit }, options),
+      SOUND_FETCH_TIMEOUT_MS
+    );
+
+    return {
+      total: page?.total ?? 0,
+      sounds: (page?.sounds ?? []).map((sound) => ({
+        ...sound,
+        credits: getCategoryCreditCost(sound.category, sound.credits),
+        previewUrl: getPublicAssetUrl(sound.previewUrl),
+        downloadUrl: getPublicAssetUrl(sound.downloadUrl)
+      }))
+    };
+  } catch {
+    return { sounds: [], total: 0 };
+  }
+}
+
 export async function getFreeKits(options: SoundFetchOptions = fetchOptions): Promise<FreeKit[]> {
   if (!hasSanityConfig) {
     return [];
@@ -95,21 +142,7 @@ export async function getFreeKits(options: SoundFetchOptions = fetchOptions): Pr
   }
 }
 
-const soundByIdQuery = `*[_type == "soundAsset" && _id == $id][0] {
-  "id": _id,
-  "createdAt": _createdAt,
-  title,
-  category,
-  "producerName": coalesce(producerName, ""),
-  bpm,
-  "mood": coalesce(mood, ""),
-  "credits": coalesce(credits, 1),
-  "duration": coalesce(duration, "0:00"),
-  "tags": coalesce(tags, []),
-  "accent": coalesce(accent, "volt"),
-  previewUrl,
-  downloadUrl
-}`;
+const soundByIdQuery = `*[_type == "soundAsset" && _id == $id][0] ${soundFields}`;
 
 /**
  * Authoritative lookup used by the download route. The client sends only a

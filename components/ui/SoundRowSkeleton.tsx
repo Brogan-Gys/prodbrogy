@@ -4,7 +4,7 @@ function SkeletonBlock({ className = "" }: { className?: string }) {
 
 export function SoundRowSkeleton() {
   return (
-    <article className="grid gap-2 border-2 border-ink bg-white p-2 shadow-[4px_4px_0_#11110f] lg:grid-cols-[1fr_220px]">
+    <article className="grid gap-2 border-2 border-ink bg-white p-2 shadow-hard-sm lg:grid-cols-[1fr_220px]">
       <div className="grid gap-2 md:grid-cols-[48px_1fr]">
         <SkeletonBlock className="h-12 w-12 border-2 border-ink" />
 
