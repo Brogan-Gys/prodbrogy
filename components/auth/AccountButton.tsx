@@ -7,7 +7,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useAccount } from "./AccountProvider";
 
 export function AccountButton() {
-  const { user, isUserResolved, openSignIn, refresh } = useAccount();
+  const { user, openSignIn, refresh } = useAccount();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
@@ -23,19 +23,6 @@ export function AccountButton() {
     announceAccountChange();
     setIsSigningOut(false);
   };
-
-  if (!isUserResolved) {
-    // Mirrors the sign-in button box exactly so nothing shifts when it lands.
-    return (
-      <span
-        className="inline-flex h-10 shrink-0 animate-pulse items-center gap-1.5 whitespace-nowrap border-2 border-ink/30 bg-ink/10 px-3 font-display text-xs font-black uppercase text-transparent"
-        aria-hidden
-      >
-        <LogIn className="h-4 w-4 opacity-0" aria-hidden />
-        Sign in
-      </span>
-    );
-  }
 
   if (!user) {
     return (

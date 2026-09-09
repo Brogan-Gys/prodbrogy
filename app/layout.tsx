@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { AccountProvider } from "@/components/auth/AccountProvider";
 import { SignInDialog } from "@/components/auth/SignInDialog";
 import { siteConfig } from "@/lib/site";
+import { getCurrentAccountUser } from "@/lib/supabase/server";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -68,11 +69,15 @@ export const viewport: Viewport = {
   themeColor: "#f6f1e7"
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read here rather than in the client provider so the header ships already
+  // signed in or out, instead of holding a placeholder until hydration.
+  const initialUser = await getCurrentAccountUser();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -86,7 +91,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AccountProvider>
+        <AccountProvider initialUser={initialUser}>
           {children}
           <SignInDialog />
         </AccountProvider>

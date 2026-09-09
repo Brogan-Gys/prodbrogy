@@ -7,7 +7,8 @@ import {
   fetchAccountState,
   signedOutAccount,
   toAccountUser,
-  type AccountState
+  type AccountState,
+  type AccountUser
 } from "@/lib/account";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { applyThemePreference, isThemePreference, readThemePreference } from "@/lib/theme";
@@ -15,8 +16,6 @@ import { applyThemePreference, isThemePreference, readThemePreference } from "@/
 type AccountContextValue = AccountState & {
   /** Full account details (credits, history, stash) are still in flight. */
   isLoading: boolean;
-  /** The header knows whether anyone is signed in. Settles before isLoading. */
-  isUserResolved: boolean;
   isSignedIn: boolean;
   refresh: () => Promise<void>;
   openSignIn: () => void;
@@ -26,10 +25,17 @@ type AccountContextValue = AccountState & {
 
 const AccountContext = createContext<AccountContextValue | null>(null);
 
-export function AccountProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AccountState>(signedOutAccount);
+export function AccountProvider({
+  children,
+  initialUser
+}: {
+  children: ReactNode;
+  /** Resolved from the request cookies on the server, so the header paints the
+   *  right button in the HTML instead of waiting for hydration. */
+  initialUser: AccountUser | null;
+}) {
+  const [state, setState] = useState<AccountState>(() => ({ ...signedOutAccount, user: initialUser }));
   const [isLoading, setIsLoading] = useState(true);
-  const [isUserResolved, setIsUserResolved] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -45,7 +51,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     } catch {
       setState(signedOutAccount);
     } finally {
-      setIsUserResolved(true);
       setIsLoading(false);
     }
   }, []);
@@ -54,16 +59,15 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabaseBrowserClient();
 
     if (!supabase) {
-      setIsUserResolved(true);
       setIsLoading(false);
       return;
     }
 
     let isActive = true;
 
-    // The session lives in a cookie the browser already has, so this settles
-    // without a network round trip and the header can paint the right button
-    // immediately. /api/account then fills in credits, history, and stash.
+    // The server already resolved the user from the same cookie, so this only
+    // catches the case where it changed since the HTML was rendered (an expired
+    // session, or a sign-in in another tab while this page sat open).
     const applyLocalSession = async () => {
       const {
         data: { session }
@@ -74,7 +78,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       }
 
       setState((current) => ({ ...current, user: session ? toAccountUser(session.user) : null }));
-      setIsUserResolved(true);
     };
 
     void applyLocalSession();
@@ -90,7 +93,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       }
 
       setState((current) => ({ ...current, user: session ? toAccountUser(session.user) : null }));
-      setIsUserResolved(true);
       void refresh();
     });
 
@@ -111,14 +113,13 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     () => ({
       ...state,
       isLoading,
-      isUserResolved,
       isSignedIn: Boolean(state.user),
       refresh,
       isSignInOpen,
       openSignIn: () => setIsSignInOpen(true),
       closeSignIn: () => setIsSignInOpen(false)
     }),
-    [isLoading, isSignInOpen, isUserResolved, refresh, state]
+    [isLoading, isSignInOpen, refresh, state]
   );
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>;
