@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, CheckCircle2, Heart, Loader2, Music4, Pause, Play, X } from "lucide-react";
+import { ArrowDownToLine, CheckCircle2, ChevronDown, Heart, Loader2, Pause, Play, X } from "lucide-react";
 import {
   DEFAULT_PREVIEW_VOLUME,
   PREVIEW_VOLUME_CHANGE_EVENT,
@@ -655,21 +655,28 @@ export function SoundRow({
             </div>
 
             {usesMidiPlayer ? (
-              <div className="mt-1.5 flex items-center gap-1.5 lg:mt-2">
-                <Music4 className="h-3 w-3 shrink-0 text-ink/55 lg:h-3.5 lg:w-3.5" aria-hidden />
-                <select
-                  value={instrument}
-                  onChange={(event) => changeInstrument(event.target.value)}
-                  onClick={(event) => event.stopPropagation()}
-                  className="h-6 min-w-0 max-w-[150px] appearance-none border-2 border-ink bg-bone px-1.5 font-display text-[9px] font-black uppercase outline-none lg:h-7 lg:text-[10px]"
-                  aria-label={`Preview instrument for ${sound.title}`}
-                >
-                  {instrumentOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="mt-1.5 flex items-center lg:mt-2">
+                {/* appearance-none drops the native arrow, so draw our own to
+                    keep it obvious the instrument is switchable. */}
+                <span className="relative inline-flex items-center">
+                  <select
+                    value={instrument}
+                    onChange={(event) => changeInstrument(event.target.value)}
+                    onClick={(event) => event.stopPropagation()}
+                    className="h-6 min-w-0 max-w-[150px] appearance-none border-2 border-ink bg-bone pl-1.5 pr-5 font-display text-[9px] font-black uppercase outline-none lg:h-7 lg:pr-6 lg:text-[10px]"
+                    aria-label={`Preview instrument for ${sound.title}`}
+                  >
+                    {instrumentOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-1 h-3 w-3 shrink-0 lg:right-1.5 lg:h-3.5 lg:w-3.5"
+                    aria-hidden
+                  />
+                </span>
               </div>
             ) : null}
 
