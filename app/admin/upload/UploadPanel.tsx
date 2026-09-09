@@ -7,8 +7,10 @@ import {
   batchCategories,
   defaultBatchCategory,
   defaultUploadCategory,
+  isMidiFile,
   parseFileName,
   readAudioDuration,
+  readMidiMeta,
   rememberAdminPassword,
   uploadCategories,
   uploadSoundFile,
@@ -28,6 +30,8 @@ type UploadPanelProps = {
 };
 
 const AUDIO_ACCEPT = "audio/*,.mp3,.wav,.m4a,.ogg,.flac,.webm";
+const MIDI_ACCEPT = ".mid,.midi,audio/midi,audio/x-midi";
+const BATCH_ACCEPT = `${AUDIO_ACCEPT},${MIDI_ACCEPT}`;
 
 export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPasswordInvalid }: UploadPanelProps) {
   const [batchCategory, setBatchCategory] = useState(defaultBatchCategory);
@@ -48,15 +52,17 @@ export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPa
     const rows = await Promise.all(
       files.map(async (file, index) => {
         const parsed = parseFileName(file.name);
-        const duration = await readAudioDuration(file);
+        const isMidi = isMidiFile(file);
+        const midiMeta = isMidi ? await readMidiMeta(file) : null;
+        const duration = midiMeta ? midiMeta.duration : await readAudioDuration(file);
 
         return {
           rowId: `${Date.now().toString(36)}-${index}-${file.name}`,
           file,
           title: parsed.title,
-          category: batchCategory,
+          category: isMidi ? "midi" : batchCategory,
           producerName: parsed.producerName,
-          bpm: parsed.bpm,
+          bpm: parsed.bpm ?? midiMeta?.bpm ?? null,
           duration,
           accent: accents[index % accents.length],
           status: "pending" as const,
@@ -167,7 +173,6 @@ export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPa
     };
 
     const downloadFile = getFile("downloadFile");
-    const previewFile = midiCategory === "midi" ? getFile("previewFile") : null;
 
     setMidiSaving(true);
     onStatus({ status: "submitting", message: "Uploading and creating catalog entry..." });
@@ -183,7 +188,6 @@ export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPa
 
       const result = await uploadSoundFile({
         file: downloadFile,
-        previewFile,
         password,
         meta: {
           title: getString("title"),
@@ -266,14 +270,14 @@ export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPa
           }`}
         >
           <UploadCloud className="h-8 w-8" aria-hidden />
-          <span className="font-display text-lg font-black uppercase leading-none">Drop audio files here</span>
-          <span className="text-xs font-bold uppercase text-ink/55">or click to browse — multiple files welcome</span>
+          <span className="font-display text-lg font-black uppercase leading-none">Drop audio or MIDI files here</span>
+          <span className="text-xs font-bold uppercase text-ink/55">or click to browse — MIDI files file themselves under MIDI automatically</span>
         </button>
         <input
           ref={fileInputRef}
           type="file"
           multiple
-          accept={AUDIO_ACCEPT}
+          accept={BATCH_ACCEPT}
           className="hidden"
           onChange={(event) => {
             void addBatchFiles(event.target.files);
@@ -445,12 +449,9 @@ export function UploadPanel({ password, onStatus, onSaved, onPasswordValid, onPa
               <input name="downloadFile" type="file" accept=".zip,.rar,.7z,.mid,.midi,audio/*" required className="file-input" />
             </Field>
             {midiCategory === "midi" ? (
-              <Field label="Preview audio (optional)">
-                <input name="previewFile" type="file" accept={AUDIO_ACCEPT} className="file-input" />
-                <p className="mt-1 text-[11px] font-bold uppercase text-ink/55">
-                  Leave empty to let the site play the MIDI itself through a soundfont.
-                </p>
-              </Field>
+              <p className="text-[11px] font-bold uppercase text-ink/55 lg:col-span-2">
+                MIDI plays in the browser through a soundfont, built from the file itself. No preview upload needed.
+              </p>
             ) : null}
             <Field label="BPM">
               <input name="bpm" type="number" min="0" className="input" placeholder="140" />

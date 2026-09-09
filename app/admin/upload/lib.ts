@@ -28,9 +28,9 @@ export type Accent = (typeof accents)[number];
 export const uploadCategories = categories.filter((category) => category.id !== "all");
 export const defaultUploadCategory = uploadCategories[0]?.id ?? "";
 
-// Batch upload is audio-only (the audio doubles as its own preview); MIDI needs a
-// hand-made preview, so it stays on the single form.
-export const batchCategories = uploadCategories.filter((category) => category.id !== "midi");
+// Audio doubles as its own preview; MIDI has no preview file at all and is
+// auditioned through /api/midi-preview, so both work in a batch.
+export const batchCategories = uploadCategories;
 export const defaultBatchCategory =
   batchCategories.find((category) => category.id === "loops")?.id ?? batchCategories[0]?.id ?? "";
 
@@ -157,6 +157,27 @@ export function readAudioDuration(file: File) {
 
     audio.src = url;
   });
+}
+
+export function isMidiFile(file: File) {
+  return /[.]midi?$/i.test(file.name);
+}
+
+/** Reads length and tempo out of the .mid itself, since an <audio> element
+ *  cannot decode one and would report 0:00 for every row. */
+export async function readMidiMeta(file: File): Promise<{ duration: string; bpm: number | null }> {
+  try {
+    const { Midi } = await import("@tonejs/midi");
+    const midi = new Midi(await file.arrayBuffer());
+    const tempo = midi.header.tempos[0]?.bpm;
+
+    return {
+      duration: formatDuration(midi.duration),
+      bpm: tempo ? Math.round(tempo) : null
+    };
+  } catch {
+    return { duration: "0:00", bpm: null };
+  }
 }
 
 // Parses "@prodbrogy - Polygraph 151 Bpm.mp3" into producer/title/bpm parts.

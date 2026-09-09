@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { DAILY_CREDIT_LIMIT } from "@/lib/credits";
+import { toAccountUser } from "@/lib/account";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { isThemePreference } from "@/lib/theme";
 
@@ -25,9 +26,10 @@ export async function GET() {
     return NextResponse.json(signedOutState);
   }
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  // Verified against the cached JWKS rather than a round trip to the auth
+  // server, which keeps this route off the header critical path.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData ? toAccountUser(claimsData.claims) : null;
 
   if (!user) {
     return NextResponse.json(signedOutState);
@@ -47,15 +49,7 @@ export async function GET() {
   };
 
   return NextResponse.json({
-    user: {
-      id: user.id,
-      email: user.email,
-      name:
-        (user.user_metadata?.full_name as string | undefined) ||
-        (user.user_metadata?.name as string | undefined) ||
-        user.email?.split("@")[0] ||
-        "Producer"
-    },
+    user,
     credits: {
       used: Number(credits.used) || 0,
       total: Number(credits.total) || DAILY_CREDIT_LIMIT,
@@ -77,9 +71,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Accounts are unavailable." }, { status: 503 });
   }
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData ? toAccountUser(claimsData.claims) : null;
 
   if (!user) {
     return NextResponse.json({ error: "Sign in to save a theme." }, { status: 401 });

@@ -25,7 +25,9 @@ export async function middleware(request: NextRequest) {
   // Refreshes an expired session and writes the rotated cookies onto the
   // response. Without this, sessions silently expire on the server.
   try {
-    const getUserPromise = supabase.auth.getUser();
+    // getClaims verifies the JWT against the cached JWKS instead of calling
+    // the auth server on every request, so this rarely costs a round trip.
+    const getUserPromise = supabase.auth.getClaims();
     const timeout = new Promise((_, reject) =>
       setTimeout(() => reject(new Error("supabase middleware timeout")), 2500)
     );

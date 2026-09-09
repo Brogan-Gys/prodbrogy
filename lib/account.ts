@@ -45,3 +45,30 @@ export async function fetchAccountState(): Promise<AccountState> {
 export function announceAccountChange() {
   window.dispatchEvent(new Event(ACCOUNT_CHANGED_EVENT));
 }
+
+/** Builds the display shape from a Supabase user/JWT claims, so the fast local
+ *  session read and the /api/account response agree on the name. */
+export function toAccountUser(source: {
+  id?: string;
+  sub?: string;
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+}): AccountUser | null {
+  const id = source.id ?? source.sub;
+
+  if (!id) {
+    return null;
+  }
+
+  const metadata = source.user_metadata ?? {};
+
+  return {
+    id,
+    email: source.email ?? null,
+    name:
+      (metadata.full_name as string | undefined) ||
+      (metadata.name as string | undefined) ||
+      source.email?.split("@")[0] ||
+      "Producer"
+  };
+}

@@ -1,16 +1,22 @@
 "use client";
 
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ACCOUNT_CHANGED_EVENT,
   fetchAccountState,
   signedOutAccount,
+  toAccountUser,
   type AccountState
 } from "@/lib/account";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { applyThemePreference, isThemePreference, readThemePreference } from "@/lib/theme";
 
 type AccountContextValue = AccountState & {
+  /** Full account details (credits, history, stash) are still in flight. */
   isLoading: boolean;
+  /** The header knows whether anyone is signed in. Settles before isLoading. */
+  isUserResolved: boolean;
   isSignedIn: boolean;
   refresh: () => Promise<void>;
   openSignIn: () => void;
@@ -23,6 +29,7 @@ const AccountContext = createContext<AccountContextValue | null>(null);
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AccountState>(signedOutAccount);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUserResolved, setIsUserResolved] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -38,12 +45,54 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     } catch {
       setState(signedOutAccount);
     } finally {
+      setIsUserResolved(true);
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      setIsUserResolved(true);
+      setIsLoading(false);
+      return;
+    }
+
+    let isActive = true;
+
+    // The session lives in a cookie the browser already has, so this settles
+    // without a network round trip and the header can paint the right button
+    // immediately. /api/account then fills in credits, history, and stash.
+    const applyLocalSession = async () => {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (!isActive) {
+        return;
+      }
+
+      setState((current) => ({ ...current, user: session ? toAccountUser(session.user) : null }));
+      setIsUserResolved(true);
+    };
+
+    void applyLocalSession();
     void refresh();
+
+    // Covers sign-in, sign-out, token refresh, and the same account changing
+    // in another tab.
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      if (!isActive || event === "INITIAL_SESSION") {
+        return;
+      }
+
+      setState((current) => ({ ...current, user: session ? toAccountUser(session.user) : null }));
+      setIsUserResolved(true);
+      void refresh();
+    });
 
     const handleChange = () => void refresh();
     window.addEventListener(ACCOUNT_CHANGED_EVENT, handleChange);
@@ -51,6 +100,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     window.addEventListener("focus", handleChange);
 
     return () => {
+      isActive = false;
+      subscription.unsubscribe();
       window.removeEventListener(ACCOUNT_CHANGED_EVENT, handleChange);
       window.removeEventListener("focus", handleChange);
     };
@@ -60,13 +111,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     () => ({
       ...state,
       isLoading,
+      isUserResolved,
       isSignedIn: Boolean(state.user),
       refresh,
       isSignInOpen,
       openSignIn: () => setIsSignInOpen(true),
       closeSignIn: () => setIsSignInOpen(false)
     }),
-    [isLoading, isSignInOpen, refresh, state]
+    [isLoading, isSignInOpen, isUserResolved, refresh, state]
   );
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>;
